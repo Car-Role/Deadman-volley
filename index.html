@@ -3,28 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadman's Volley Prototype</title>
+    <title>Deadman's Volley</title>
     <style>
-        canvas {
-            border: 1px solid black;
-            display: block;
-            margin: 0 auto;
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        #gameCanvas {
+            border: 2px solid #333;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
         #replayButton {
             display: none;
-            position: absolute;
-            left: 50%;
-            top: 60%;
-            transform: translate(-50%, -50%);
+            margin-top: 20px;
             padding: 10px 20px;
             font-size: 16px;
             cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        #replayButton:hover {
+            background-color: #45a049;
+        }
+        #instructions {
+            margin-top: 20px;
+            text-align: center;
+            color: #666;
         }
     </style>
 </head>
 <body>
+    <h1>Deadman's Volley</h1>
     <canvas id="gameCanvas" width="800" height="400"></canvas>
     <button id="replayButton">Replay</button>
+    <div id="instructions">
+        <p>Use arrow keys or WASD to move. Spacebar activates shield.</p>
+        <p>Reflect the ball to damage the post. Avoid getting hit!</p>
+    </div>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -135,14 +164,14 @@
             ctx.fillRect(post.x, post.y, post.width, post.height);
 
             if (reflectionEffect.active) {
-                ctx.fillStyle = 'yellow';
+                ctx.fillStyle = 'rgba(255, 255, 0, 0.5)';
                 ctx.beginPath();
                 ctx.arc(post.x + post.width / 2, post.y + post.height / 2, 30, 0, Math.PI * 2);
                 ctx.fill();
             }
 
             if (damageEffect.active) {
-                ctx.fillStyle = 'red';
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
                 ctx.beginPath();
                 ctx.moveTo(post.x, post.y);
                 ctx.lineTo(post.x + post.width, post.y);
@@ -291,7 +320,8 @@
             if (gameOver) {
                 ctx.font = '30px Arial';
                 ctx.fillStyle = 'black';
-                ctx.fillText('Game Over!', canvas.width / 2 - 70, canvas.height / 2);
+                ctx.textAlign = 'center';
+                ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2);
             }
         }
 
