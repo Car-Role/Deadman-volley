@@ -23,6 +23,7 @@
             border: 2px solid #333;
             background-color: #fff;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            position: relative;
         }
         #replayButton {
             display: none;
@@ -44,14 +45,85 @@
             text-align: center;
             color: #666;
         }
+        #powerUpContainer {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            max-width: 800px;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        .powerUpRow {
+            display: flex;
+            justify-content: space-between;
+        }
+        .powerUpPanel {
+            flex: 1;
+            margin: 0 10px;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        .powerUpPanel:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .powerUpPanel h3 {
+            margin-top: 0;
+            color: #fff;
+            font-size: 24px;
+        }
+        .powerUpPanel p {
+            color: #ddd;
+            font-size: 16px;
+        }
+        #stageClearText {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 30px;
+            color: white;
+            text-align: center;
+            z-index: 10;
+        }
     </style>
 </head>
 <body>
     <h1>Deadman's Volley</h1>
-    <canvas id="gameCanvas" width="1000" height="600"></canvas>
+    <div style="position: relative;">
+        <canvas id="gameCanvas" width="1000" height="600"></canvas>
+        <div id="stageClearText"></div>
+        <div id="powerUpContainer">
+            <div class="powerUpRow">
+                <div class="powerUpPanel" id="healthRefresh">
+                    <h3>Refresh Health</h3>
+                    <p>Restore your health to full</p>
+                </div>
+                <div class="powerUpPanel" id="healthIncrease">
+                    <h3>Increase Max Health</h3>
+                    <p>Permanently increase your maximum health</p>
+                </div>
+                <div class="powerUpPanel" id="damageIncrease">
+                    <h3>Increase Damage</h3>
+                    <p>Permanently increase the damage you deal</p>
+                </div>
+            </div>
+        </div>
+    </div>
     <button id="replayButton">Replay</button>
     <div id="instructions">
-        <p>Controls: Arrow keys or WASD to move, Spacebar for shield (0.5s duration)</p>
+        <p>Controls: Arrow keys or WASD to move, Spacebar for shield (0.25s duration)</p>
         <p>Reflect the ball to damage the enemy. Avoid getting hit!</p>
         <p>Defeat 3 stages of enemies, with the final being a boss!</p>
     </div>
@@ -59,17 +131,27 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const replayButton = document.getElementById('replayButton');
+        const powerUpContainer = document.getElementById('powerUpContainer');
+        const healthRefreshPanel = document.getElementById('healthRefresh');
+        const healthIncreasePanel = document.getElementById('healthIncrease');
+        const damageIncreasePanel = document.getElementById('damageIncrease');
+        const stageClearText = document.getElementById('stageClearText');
+
+        // Add these variables at the beginning of your script
+        let lastTime = 0;
+        const fixedTimeStep = 1000 / 120; // 120 FPS for faster game play
+        let accumulator = 0;
 
         // Game objects
         const ball = {
             x: 500,
             y: 300,
             radius: 10,
-            speed: 3.5,
-            initialSpeed: 3.5,
+            speed: 7, // Doubled speed
+            initialSpeed: 7, // Doubled initial speed
             target: 'player',
             paused: false,
-            pauseDuration: 60,
+            pauseDuration: 1, // 1 second
             pauseTimer: 0
         };
 
@@ -78,14 +160,16 @@
             y: 270,
             width: 20,
             height: 60,
-            dy: 5,
-            dx: 5,
+            dy: 10, // Doubled movement speed
+            dx: 10, // Doubled movement speed
             maxHealth: 3,
             health: 3,
+            damage: 1,
             barrier: {
                 active: false,
-                duration: 30,
-                timer: 0
+                duration: 0.25, // 0.25 seconds
+                timer: 0,
+                canActivate: true
             }
         };
 
@@ -107,23 +191,27 @@
         // Effect objects
         const reflectionEffect = {
             active: false,
-            duration: 30,
+            duration: 0.5, // 0.5 seconds
             timer: 0
         };
 
         const damageEffect = {
             active: false,
-            duration: 30,
+            duration: 0.5, // 0.5 seconds
             timer: 0
         };
 
         // Game state
         let gameOver = false;
+        let stageClear = false;
 
         // Event listeners
         document.addEventListener('keydown', keyDownHandler);
         document.addEventListener('keyup', keyUpHandler);
         replayButton.addEventListener('click', resetGame);
+        healthRefreshPanel.addEventListener('click', () => applyPowerUp('healthRefresh'));
+        healthIncreasePanel.addEventListener('click', () => applyPowerUp('healthIncrease'));
+        damageIncreasePanel.addEventListener('click', () => applyPowerUp('damageIncrease'));
 
         let upPressed = false;
         let downPressed = false;
@@ -136,10 +224,11 @@
             else if (e.key === 'ArrowDown' || e.key === 's') downPressed = true;
             else if (e.key === 'ArrowLeft' || e.key === 'a') leftPressed = true;
             else if (e.key === 'ArrowRight' || e.key === 'd') rightPressed = true;
-            else if (e.key === ' ' && !player.barrier.active) {
+            else if (e.key === ' ' && !player.barrier.active && player.barrier.canActivate) {
                 shieldPressed = true;
                 player.barrier.active = true;
                 player.barrier.timer = player.barrier.duration;
+                player.barrier.canActivate = false;
             }
         }
 
@@ -148,7 +237,10 @@
             else if (e.key === 'ArrowDown' || e.key === 's') downPressed = false;
             else if (e.key === 'ArrowLeft' || e.key === 'a') leftPressed = false;
             else if (e.key === 'ArrowRight' || e.key === 'd') rightPressed = false;
-            else if (e.key === ' ') shieldPressed = false;
+            else if (e.key === ' ') {
+                shieldPressed = false;
+                player.barrier.canActivate = true;
+            }
         }
 
         function drawBall() {
@@ -165,8 +257,8 @@
 
             if (player.barrier.active) {
                 ctx.strokeStyle = 'cyan';
-                ctx.lineWidth = 3;
-                ctx.strokeRect(player.x - 5, player.y - 5, player.width + 10, player.height + 10);
+                ctx.lineWidth = 6; // Increased thickness of the barrier
+                ctx.strokeRect(player.x - 8, player.y - 8, player.width + 16, player.height + 16);
             }
         }
 
@@ -191,7 +283,6 @@
                 ctx.fill();
             }
         }
-
         function drawHealthBars() {
             // Player health bar
             ctx.fillStyle = 'lightgray';
@@ -210,18 +301,20 @@
             ctx.strokeRect(canvas.width - 110, 10, 100, 20);
         }
 
-        function update() {
-            if (gameOver) return;
+        // Modify the update function to accept deltaTime
+        function update(deltaTime) {
+            if (gameOver || stageClear) return;
 
             // Player movement
-            if (upPressed && player.y > 0) player.y -= player.dy;
-            if (downPressed && player.y + player.height < canvas.height) player.y += player.dy;
-            if (leftPressed && player.x > 0) player.x -= player.dx;
-            if (rightPressed && player.x + player.width < canvas.width / 2) player.x += player.dx;
+            const playerSpeed = 600 * deltaTime; // Doubled speed in pixels per second
+            if (upPressed && player.y > 0) player.y -= playerSpeed;
+            if (downPressed && player.y + player.height < canvas.height) player.y += playerSpeed;
+            if (leftPressed && player.x > 0) player.x -= playerSpeed;
+            if (rightPressed && player.x + player.width < canvas.width / 2) player.x += playerSpeed;
 
             // Ball movement
             if (ball.paused) {
-                ball.pauseTimer--;
+                ball.pauseTimer -= deltaTime;
                 if (ball.pauseTimer <= 0) {
                     ball.paused = false;
                 }
@@ -236,8 +329,8 @@
                 }
 
                 let angle = Math.atan2(targetY - ball.y, targetX - ball.x);
-                ball.x += Math.cos(angle) * ball.speed;
-                ball.y += Math.sin(angle) * ball.speed;
+                ball.x += Math.cos(angle) * ball.speed * deltaTime * 120; // Doubled speed factor
+                ball.y += Math.sin(angle) * ball.speed * deltaTime * 120; // Doubled speed factor
 
                 // Ball collision with top and bottom
                 if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
@@ -267,7 +360,7 @@
                         reflectionEffect.active = true;
                         reflectionEffect.timer = reflectionEffect.duration;
                     } else {
-                        currentEnemy.health--;
+                        currentEnemy.health -= player.damage;
                         resetBall();
                         damageEffect.active = true;
                         damageEffect.timer = damageEffect.duration;
@@ -277,7 +370,7 @@
 
             // Barrier logic
             if (player.barrier.active) {
-                player.barrier.timer--;
+                player.barrier.timer -= deltaTime;
                 if (player.barrier.timer <= 0) {
                     player.barrier.active = false;
                 }
@@ -285,14 +378,14 @@
 
             // Update effects
             if (reflectionEffect.active) {
-                reflectionEffect.timer--;
+                reflectionEffect.timer -= deltaTime;
                 if (reflectionEffect.timer <= 0) {
                     reflectionEffect.active = false;
                 }
             }
 
             if (damageEffect.active) {
-                damageEffect.timer--;
+                damageEffect.timer -= deltaTime;
                 if (damageEffect.timer <= 0) {
                     damageEffect.active = false;
                 }
@@ -308,13 +401,8 @@
             if (currentEnemy.health <= 0) {
                 currentStage++;
                 if (currentStage < enemies.length) {
-                    currentEnemy = {
-                        x: 930,
-                        y: 270,
-                        ...enemies[currentStage],
-                        health: enemies[currentStage].maxHealth
-                    };
-                    resetBall();
+                    stageClear = true;
+                    powerUpContainer.style.display = 'block';
                 } else {
                     gameOver = true;
                     replayButton.style.display = 'block';
@@ -322,6 +410,7 @@
             }
         }
 
+        // Modify the resetBall function
         function resetBall() {
             ball.x = canvas.width / 2;
             ball.y = canvas.height / 2;
@@ -354,10 +443,31 @@
                     ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2);
                 }
             }
+
+            if (stageClear) {
+                ctx.font = '30px Arial';
+                ctx.fillStyle = 'black';
+                ctx.textAlign = 'center';
+                ctx.fillText('Stage Clear! Choose a power-up:', canvas.width / 2, canvas.height / 2 - 150);
+            }
         }
 
-        function gameLoop() {
-            update();
+        // Replace the existing gameLoop function with this one
+        function gameLoop(currentTime) {
+            if (lastTime === 0) {
+                lastTime = currentTime;
+            }
+
+            const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
+            lastTime = currentTime;
+
+            accumulator += deltaTime;
+
+            while (accumulator >= fixedTimeStep / 1000) {
+                update(fixedTimeStep / 1000);
+                accumulator -= fixedTimeStep / 1000;
+            }
+
             draw();
             requestAnimationFrame(gameLoop);
         }
@@ -396,7 +506,43 @@
             replayButton.style.display = 'none';
         }
 
-        gameLoop();
+        function applyPowerUp(powerUpType) {
+            switch (powerUpType) {
+                case 'healthRefresh':
+                    player.health = player.maxHealth;
+                    break;
+                case 'healthIncrease':
+                    player.maxHealth += 1;
+                    player.health = player.maxHealth;
+                    break;
+                case 'damageIncrease':
+                    player.damage += 1;
+                    break;
+            }
+
+            // Hide the power-up container
+            powerUpContainer.style.display = 'none';
+
+            // Reset stage clear flag
+            stageClear = false;
+
+            // Set up the next enemy
+            currentEnemy = {
+                x: 930,
+                y: 270,
+                ...enemies[currentStage],
+                health: enemies[currentStage].maxHealth
+            };
+
+            // Reset the ball
+            resetBall();
+
+            // Resume gameplay
+            gameLoop(performance.now());
+        }
+
+        // Start the game loop
+        requestAnimationFrame(gameLoop);
     </script>
 </body>
 </html>
