@@ -170,34 +170,35 @@
             console.log('Attempting to fetch highscores for:', username);
 
             try {
-                const response = await fetch(`https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player=${encodeURIComponent(username)}`, {
-                    headers: {
-                        'User-Agent': 'RuneScape Skill UI/1.0'
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                const apiUrl = `https://secure.runescape.com/m=hiscore_oldschool/index_lite.json?player=${encodeURIComponent(username)}`;
 
-                const data = await response.text();
-                console.log('Raw data received:', data);
-
-                const lines = data.trim().split('\n');
-                console.log('Number of lines:', lines.length);
-
-                skillOrder.forEach((skill, index) => {
-                    if (skill !== 'Overall' && index < lines.length) {
-                        const [rank, level, xp] = lines[index].split(',');
-                        skillLevels[skill] = parseInt(level);
-                        console.log(`${skill}: ${skillLevels[skill]}`);
-                    }
-                });
-                renderSkills();
-                console.log('Skills updated successfully');
+                fetch(apiUrl)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log(data);
+                        // Process the data here
+                        skillOrder.forEach((skill, index) => {
+                            if (skill !== 'Overall' && index < data.length) {
+                                const [rank, level, xp] = data[index];
+                                skillLevels[skill] = parseInt(level);
+                                console.log(`${skill}: ${skillLevels[skill]}`);
+                            }
+                        });
+                        renderSkills();
+                        console.log('Skills updated successfully');
+                    })
+                    .catch(error => {
+                        console.error('There was a problem with the fetch operation:', error);
+                        errorElement.textContent = 'Failed to fetch highscores. Please check the username and try again.';
+                    });
             } catch (error) {
-                errorElement.textContent = 'Failed to fetch highscores. Please check the username and try again.';
                 console.error('Error fetching highscores:', error);
+                errorElement.textContent = 'Failed to fetch highscores. Please check the username and try again.';
             }
         }
 
