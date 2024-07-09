@@ -170,20 +170,25 @@
             console.log('Attempting to fetch highscores for:', username);
 
             try {
-                const apiUrl = `https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player=pepehandsys`;
-
-                const response = await fetch(apiUrl);
+                const apiUrl = `https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player=${encodeURIComponent(username)}`;
+                const corsProxyUrl = 'https://cors-anywhere.herokuapp.com/';
+                const response = await fetch(corsProxyUrl + apiUrl);
+                
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
                 }
                 const text = await response.text();
+                console.log('API response:', text);
                 const lines = text.trim().split('\n');
+                console.log('Parsed lines:', lines);
                 
                 skillOrder.forEach((skill, index) => {
-                    if (skill !== 'Overall' && index < lines.length) {
+                    if (index < lines.length) {
                         const [rank, level, xp] = lines[index].split(',');
-                        skillLevels[skill] = parseInt(level);
-                        console.log(`${skill}: ${skillLevels[skill]}`);
+                        if (skill !== 'Overall') {
+                            skillLevels[skill] = parseInt(level);
+                            console.log(`${skill}: ${skillLevels[skill]}`);
+                        }
                     }
                 });
                 renderSkills();
