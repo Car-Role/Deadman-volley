@@ -175,9 +175,7 @@
                         'User-Agent': 'RuneScape Skill UI/1.0'
                     }
                 });
-                console.log('Response status:', response.status);
-                console.log('Response headers:', response.headers);
-
+                
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -185,22 +183,14 @@
                 const data = await response.text();
                 console.log('Raw data received:', data);
 
-                if (!data.trim()) {
-                    throw new Error('No data received from the API');
-                }
-
                 const lines = data.trim().split('\n');
                 console.log('Number of lines:', lines.length);
 
                 skillOrder.forEach((skill, index) => {
                     if (skill !== 'Overall' && index < lines.length) {
-                        const skillData = lines[index].split(',');
-                        if (skillData.length >= 2) {
-                            skillLevels[skill] = parseInt(skillData[1]);
-                            console.log(`${skill}: ${skillLevels[skill]}`);
-                        } else {
-                            console.warn(`Invalid data for ${skill}: ${lines[index]}`);
-                        }
+                        const [rank, level, xp] = lines[index].split(',');
+                        skillLevels[skill] = parseInt(level);
+                        console.log(`${skill}: ${skillLevels[skill]}`);
                     }
                 });
                 renderSkills();
