@@ -169,19 +169,25 @@
             errorElement.textContent = '';
 
             try {
-                const response = await fetch(`https://services.runescape.com/m=hiscore_oldschool/index_lite.ws?player=${encodeURIComponent(username)}`);
+                const response = await fetch(`https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player=${encodeURIComponent(username)}`, {
+                    headers: {
+                        'User-Agent': 'RuneScape Skill UI/1.0'
+                    }
+                });
                 if (!response.ok) throw new Error('Failed to fetch highscores');
                 const data = await response.text();
                 
-                const lines = data.split('\n');
+                const lines = data.trim().split('\n');
                 skillOrder.forEach((skill, index) => {
                     if (skill !== 'Overall') {
-                        skillLevels[skill] = parseInt(lines[index].split(',')[1]);
+                        const skillData = lines[index].split(',');
+                        skillLevels[skill] = parseInt(skillData[1]);
                     }
                 });
                 renderSkills();
             } catch (error) {
                 errorElement.textContent = 'Failed to fetch highscores. Please check the username and try again.';
+                console.error('Error fetching highscores:', error);
             }
         }
 
