@@ -32,6 +32,53 @@
             body {
                 padding: 10px;
             }
+
+            .container {
+                padding: 15px;
+                max-width: 100%;
+            }
+
+            .skills-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 5px;
+            }
+
+            .skill-item {
+                font-size: 12px;
+                padding: 5px;
+            }
+
+            .skill-controls input {
+                width: 25px;
+                font-size: 12px;
+            }
+
+            .skill-controls button {
+                padding: 2px 4px;
+                font-size: 12px;
+                min-width: 20px;
+                min-height: 20px;
+            }
+
+            .threshold-comparison {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .threshold-comparison select {
+                margin-top: 5px;
+                margin-left: 0;
+            }
+
+            #threshold-difference {
+                margin-top: 5px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .skills-grid {
+                grid-template-columns: repeat(1, 1fr);
+            }
         }
 
         .container {
@@ -41,12 +88,6 @@
             max-width: 400px;
             width: 100%;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 15px;
-            }
         }
 
         .input-group {
@@ -88,30 +129,12 @@
             margin-bottom: 20px;
         }
 
-        @media (max-width: 768px) {
-            .skills-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 480px) {
-            .skills-grid {
-                grid-template-columns: repeat(1, 1fr);
-            }
-        }
-
         .skill-item {
             background-color: var(--input-bg);
             padding: 10px;
             border-radius: 8px;
             text-align: center;
             font-size: 14px;
-        }
-
-        @media (max-width: 768px) {
-            .skill-item {
-                font-size: 12px;
-            }
         }
 
         .skill-controls {
@@ -133,13 +156,6 @@
             margin: 0 4px;
         }
 
-        @media (max-width: 768px) {
-            .skill-controls input {
-                width: 30px;
-                font-size: 12px;
-            }
-        }
-
         .skill-controls button {
             padding: 4px 8px;
             font-size: 14px;
@@ -152,15 +168,6 @@
             touch-action: manipulation;
         }
 
-        @media (max-width: 768px) {
-            .skill-controls button {
-                padding: 2px 6px;
-                font-size: 12px;
-                min-width: 24px;
-                min-height: 24px;
-            }
-        }
-
         .total-level, .threshold-comparison {
             background-color: var(--input-bg);
             padding: 10px;
@@ -170,13 +177,6 @@
             align-items: center;
             margin-bottom: 10px;
             font-size: 14px;
-        }
-
-        @media (max-width: 768px) {
-            .threshold-comparison {
-                flex-direction: column;
-                align-items: flex-start;
-            }
         }
 
         .error {
@@ -195,23 +195,10 @@
             font-size: 12px;
         }
 
-        @media (max-width: 768px) {
-            .threshold-comparison select {
-                margin-top: 5px;
-                margin-left: 0;
-            }
-        }
-
         #threshold-difference {
             margin-top: 5px;
             font-weight: bold;
             font-size: 12px;
-        }
-
-        @media (max-width: 768px) {
-            #threshold-difference {
-                margin-top: 5px;
-            }
         }
     </style>
 </head>
