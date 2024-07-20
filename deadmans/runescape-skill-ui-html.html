@@ -216,8 +216,8 @@
 
             try {
                 const apiUrl = `https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player=${encodeURIComponent(username)}`;
-                const corsProxyUrl = 'https://cors-anywhere.herokuapp.com/';
-                const response = await fetch(corsProxyUrl + apiUrl);
+                const corsProxyUrl = 'https://corsproxy.io/?';
+                const response = await fetch(corsProxyUrl + encodeURIComponent(apiUrl));
                 
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
