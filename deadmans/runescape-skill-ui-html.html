@@ -28,6 +28,12 @@
             box-sizing: border-box;
         }
 
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+        }
+
         .container {
             background-color: var(--container-bg);
             padding: 20px;
@@ -35,6 +41,12 @@
             max-width: 400px;
             width: 100%;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
         }
 
         .input-group {
@@ -62,6 +74,7 @@
             font-size: 14px;
             transition: background-color 0.3s ease;
             white-space: nowrap;
+            touch-action: manipulation;
         }
 
         button:hover {
@@ -75,6 +88,18 @@
             margin-bottom: 20px;
         }
 
+        @media (max-width: 768px) {
+            .skills-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .skills-grid {
+                grid-template-columns: repeat(1, 1fr);
+            }
+        }
+
         .skill-item {
             background-color: var(--input-bg);
             padding: 10px;
@@ -83,22 +108,17 @@
             font-size: 14px;
         }
 
+        @media (max-width: 768px) {
+            .skill-item {
+                font-size: 12px;
+            }
+        }
+
         .skill-controls {
             display: flex;
             align-items: center;
             justify-content: space-between;
             margin-top: 5px;
-        }
-
-        .skill-controls button {
-            padding: 4px 8px;
-            font-size: 14px;
-            border-radius: 4px;
-            min-width: 28px;
-            min-height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
         .skill-controls input {
@@ -113,6 +133,34 @@
             margin: 0 4px;
         }
 
+        @media (max-width: 768px) {
+            .skill-controls input {
+                width: 30px;
+                font-size: 12px;
+            }
+        }
+
+        .skill-controls button {
+            padding: 4px 8px;
+            font-size: 14px;
+            border-radius: 4px;
+            min-width: 28px;
+            min-height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+
+        @media (max-width: 768px) {
+            .skill-controls button {
+                padding: 2px 6px;
+                font-size: 12px;
+                min-width: 24px;
+                min-height: 24px;
+            }
+        }
+
         .total-level, .threshold-comparison {
             background-color: var(--input-bg);
             padding: 10px;
@@ -122,6 +170,13 @@
             align-items: center;
             margin-bottom: 10px;
             font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .threshold-comparison {
+                flex-direction: column;
+                align-items: flex-start;
+            }
         }
 
         .error {
@@ -140,10 +195,23 @@
             font-size: 12px;
         }
 
+        @media (max-width: 768px) {
+            .threshold-comparison select {
+                margin-top: 5px;
+                margin-left: 0;
+            }
+        }
+
         #threshold-difference {
             margin-top: 5px;
             font-weight: bold;
             font-size: 12px;
+        }
+
+        @media (max-width: 768px) {
+            #threshold-difference {
+                margin-top: 5px;
+            }
         }
     </style>
 </head>
@@ -160,16 +228,18 @@
             <span id="total-level">0</span>
         </div>
         <div class="threshold-comparison">
-            <label for="threshold-select">Compare to threshold:</label>
-            <select id="threshold-select" onchange="updateThresholdComparison()">
-                <option value="750">750</option>
-                <option value="1000">1000</option>
-                <option value="1250">1250</option>
-                <option value="1500">1500</option>
-                <option value="1750">1750</option>
-                <option value="2000" selected>2000</option>
-                <option value="2200">2200</option>
-            </select>
+            <div>
+                <label for="threshold-select">Compare to threshold:</label>
+                <select id="threshold-select" onchange="updateThresholdComparison()">
+                    <option value="750">750</option>
+                    <option value="1000">1000</option>
+                    <option value="1250">1250</option>
+                    <option value="1500">1500</option>
+                    <option value="1750">1750</option>
+                    <option value="2000" selected>2000</option>
+                    <option value="2200">2200</option>
+                </select>
+            </div>
             <div id="threshold-difference"></div>
         </div>
     </div>
