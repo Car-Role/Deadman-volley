@@ -82,6 +82,26 @@
             color: #fc8181;
             margin-bottom: 10px;
         }
+        .threshold-comparison {
+            margin-top: 20px;
+            background-color: #4a5568;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .threshold-comparison select {
+            background-color: #2d3748;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px;
+            margin-left: 10px;
+        }
+
+        #threshold-difference {
+            margin-top: 10px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -95,6 +115,19 @@
         <div class="total-level">
             <span>Total level:</span>
             <span id="total-level">0</span>
+        </div>
+        <div class="threshold-comparison">
+            <label for="threshold-select">Compare to threshold:</label>
+            <select id="threshold-select" onchange="updateThresholdComparison()">
+                <option value="750">750</option>
+                <option value="1000">1000</option>
+                <option value="1250">1250</option>
+                <option value="1500">1500</option>
+                <option value="1750">1750</option>
+                <option value="2000" selected>2000</option>
+                <option value="2200">2200</option>
+            </select>
+            <div id="threshold-difference"></div>
         </div>
     </div>
 
@@ -161,6 +194,18 @@
         function updateTotalLevel() {
             const totalLevel = Object.values(skillLevels).reduce((sum, level) => sum + level, 0);
             document.getElementById('total-level').textContent = totalLevel;
+            updateThresholdComparison();
+        }
+
+        function updateThresholdComparison() {
+            const totalLevel = Object.values(skillLevels).reduce((sum, level) => sum + level, 0);
+            const thresholdSelect = document.getElementById('threshold-select');
+            const thresholdDifference = document.getElementById('threshold-difference');
+            const selectedThreshold = parseInt(thresholdSelect.value);
+
+            const difference = selectedThreshold - totalLevel;
+            const sign = difference > 0 ? '+' : '';
+            thresholdDifference.textContent = `Difference: ${sign}${difference}`;
         }
 
         async function importHighscores() {
@@ -200,6 +245,7 @@
         }
 
         initializeSkills();
+        updateThresholdComparison();
     </script>
 </body>
 </html>
