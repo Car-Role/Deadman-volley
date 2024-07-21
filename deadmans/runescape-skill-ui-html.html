@@ -101,6 +101,7 @@
             padding: 2px;
             font-size: 14px;
             margin: 0 4px;
+            maxlength: 2;
         }
 
         .skill-controls button {
@@ -279,7 +280,7 @@
                     <div>${skill}</div>
                     <div class="skill-controls">
                         <button onclick="updateSkill('${skill}', -1)">-</button>
-                        <input type="number" value="${skillLevels[skill]}" min="1" max="99" onchange="updateSkill('${skill}', this.value)">
+                        <input type="number" value="${skillLevels[skill]}" min="1" max="99" onchange="updateSkill('${skill}', this.value)" maxlength="2">
                         <button onclick="updateSkill('${skill}', 1)">+</button>
                     </div>
                 `;
@@ -299,12 +300,12 @@
 
         function updateTotalLevel() {
             const totalLevel = Object.values(skillLevels).reduce((sum, level) => sum + level, 0);
-            document.getElementById('total-level').textContent = totalLevel;
+            document.getElementById('total-level').textContent = Math.min(9999, totalLevel);
             updateThresholdComparison();
         }
 
         function updateThresholdComparison() {
-            const totalLevel = Object.values(skillLevels).reduce((sum, level) => sum + level, 0);
+            const totalLevel = Math.min(9999, Object.values(skillLevels).reduce((sum, level) => sum + level, 0));
             const thresholdSelect = document.getElementById('threshold-select');
             const thresholdDifference = document.getElementById('threshold-difference');
             const selectedThreshold = parseInt(thresholdSelect.value);
