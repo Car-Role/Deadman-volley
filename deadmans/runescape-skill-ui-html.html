@@ -333,13 +333,22 @@
                 const lines = text.trim().split('\n');
                 console.log('Parsed lines:', lines);
                 
-                skillOrder.forEach((skill, index) => {
-                    if (index < lines.length) {
-                        const [rank, level, xp] = lines[index].split(',');
-                        if (skill !== 'Overall') {
-                            skillLevels[skill] = parseInt(level);
-                            console.log(`${skill}: ${skillLevels[skill]}`);
-                        }
+                // Skip the first line (overall stats)
+                const skillLines = lines.slice(1, 24);
+                
+                // Map API skill order to our skill order
+                const apiSkillOrder = [
+                    'Attack', 'Defence', 'Strength', 'Hitpoints', 'Ranged', 'Prayer', 'Magic',
+                    'Cooking', 'Woodcutting', 'Fletching', 'Fishing', 'Firemaking', 'Crafting',
+                    'Smithing', 'Mining', 'Herblore', 'Agility', 'Thieving', 'Slayer', 'Farming',
+                    'Runecraft', 'Hunter', 'Construction'
+                ];
+
+                apiSkillOrder.forEach((skill, index) => {
+                    if (index < skillLines.length) {
+                        const [rank, level, xp] = skillLines[index].split(',');
+                        skillLevels[skill] = parseInt(level);
+                        console.log(`${skill}: ${skillLevels[skill]}`);
                     }
                 });
                 renderSkills();

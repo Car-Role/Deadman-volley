@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deadman's Volley</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        #gameContainer {
+            width: 1000px;
+            height: 700px;  /* Increased to accommodate text below */
+        }
+    </style>
+</head>
+<body>
+    <h1>Deadman's Volley</h1>
+    <div id="gameContainer"></div>
+    <script>
+        const config = {
+            type: Phaser.AUTO,
+            width: 1000,
+            height: 600,
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    debug: false
+                }
+            },
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            }
+        };
+
+        const game = new Phaser.Game(config);
+
+        let player, enemy, ball;
+        let cursors, wasd;
+        let gameOver = false;
+        let currentStage = 0;
+        let playerHealthText, enemyHealthText, stageText;
+        let shieldActive = false;
+        let shieldTimer = 0;
+
+        const enemies = [
+            { width: 20, height: 60, maxHealth: 3, reflectProb: 0.7 },
+            { width: 30, height: 90, maxHealth: 5, reflectProb: 0.8 },
+            { width: 40, height: 120, maxHealth: 7, reflectProb: 0.9 }
+        ];
+
+        function preload() {
+            // No assets to preload
+        }
+
+        function create() {
+            // Create player
+            player = this.add.rectangle(50, 300, 20, 60, 0x0000ff);
+            this.physics.add.existing(player);
+            player.body.setCollideWorldBounds(true);
+            player.maxHealth = 3;
+            player.health = 3;
+            player.damage = 1;
+
+            // Add a visual representation for the shield (initially invisible)
+            player.shield = this.add.rectangle(player.x, player.y, 40, 80, 0x00ffff, 0.5);
+            player.shield.setVisible(false);
+
+            // Create enemy
+            enemy = this.add.rectangle(930, 300, enemies[currentStage].width, enemies[currentStage].height, 0x00ff00);
+            this.physics.add.existing(enemy);
+            enemy.body.setImmovable(true);
+            enemy.maxHealth = enemies[currentStage].maxHealth;
+            enemy.health = enemy.maxHealth;
+            enemy.reflectProb = enemies[currentStage].reflectProb;
+
+            // Create ball
+            ball = this.add.circle(500, 300, 10, 0xff0000);
+            this.physics.add.existing(ball);
+            ball.body.setCollideWorldBounds(true);
+            ball.body.setBounce(1, 1);
+            ball.body.setVelocity(300, 300);
+
+            // Set up input
+            cursors = this.input.keyboard.createCursorKeys();
+            wasd = this.input.keyboard.addKeys('W,A,S,D');
+
+            // Set up collisions
+            this.physics.add.collider(ball, player, hitPlayer, null, this);
+            this.physics.add.collider(ball, enemy, hitEnemy, null, this);
+
+            // Add UI elements
+            this.add.text(10, 10, 'Player Health:', { fontSize: '16px', fill: '#000' });
+            playerHealthText = this.add.text(120, 10, player.health, { fontSize: '16px', fill: '#000' });
+            this.add.text(870, 10, 'Enemy Health:', { fontSize: '16px', fill: '#000' });
+            enemyHealthText = this.add.text(980, 10, enemy.health, { fontSize: '16px', fill: '#000' });
+            stageText = this.add.text(450, 10, `Stage: ${currentStage + 1}`, { fontSize: '16px', fill: '#000' });
+
+            // Add instructions text below the game
+            this.add.text(10, 610, 'Controls: Arrow keys or WASD to move, Spacebar for shield (0.25s duration)', { fontSize: '16px', fill: '#000' });
+            this.add.text(10, 630, 'Reflect the ball to damage the enemy. Avoid getting hit!', { fontSize: '16px', fill: '#000' });
+            this.add.text(10, 650, 'Defeat 3 stages of enemies, with the final being a boss!', { fontSize: '16px', fill: '#000' });
+        }
+
+        function update(time, delta) {
+            if (gameOver) return;
+
+            // Player movement (including left and right)
+            if ((cursors.up.isDown || wasd.W.isDown) && player.y > 30) {
+                player.y -= 5;
+            } else if ((cursors.down.isDown || wasd.S.isDown) && player.y < 570) {
+                player.y += 5;
+            }
+            if ((cursors.left.isDown || wasd.A.isDown) && player.x > 20) {
+                player.x -= 5;
+            } else if ((cursors.right.isDown || wasd.D.isDown) && player.x < 980) {
+                player.x += 5;
+            }
+
+            // Update shield position
+            player.shield.setPosition(player.x, player.y);
+
+            // Shield activation
+            if (cursors.space.isDown && !shieldActive) {
+                shieldActive = true;
+                shieldTimer = 0;
+                player.shield.setVisible(true);
+            }
+
+            // Shield timer
+            if (shieldActive) {
+                shieldTimer += delta;
+                if (shieldTimer >= 250) {  // 0.25 seconds
+                    shieldActive = false;
+                    player.shield.setVisible(false);
+                }
+            }
+
+            // Ball homing
+            let target = shieldActive ? enemy : player;
+            let angle = Phaser.Math.Angle.Between(ball.x, ball.y, target.x, target.y);
+            let velocity = new Phaser.Math.Vector2(Math.cos(angle), Math.sin(angle));
+            ball.body.setVelocity(velocity.x * 300, velocity.y * 300);
+
+            // Update health displays
+            playerHealthText.setText(player.health);
+            enemyHealthText.setText(enemy.health);
+
+            // Check for game over
+            if (player.health <= 0 || enemy.health <= 0) {
+                gameOver = true;
+                this.add.text(400, 300, 'Game Over', { fontSize: '32px', fill: '#000' });
+            }
+        }
+
+        function hitPlayer(ball, player) {
+            if (!shieldActive) {
+                player.health--;
+                resetBall(this);
+            } else {
+                // Change ball direction towards enemy
+                let angle = Phaser.Math.Angle.Between(player.x, player.y, enemy.x, enemy.y);
+                let velocity = new Phaser.Math.Vector2(Math.cos(angle), Math.sin(angle));
+                ball.body.setVelocity(velocity.x * 300, velocity.y * 300);
+            }
+        }
+
+        function hitEnemy(ball, enemy) {
+            if (Math.random() < enemy.reflectProb) {
+                // Enemy reflects the ball
+                let angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, player.x, player.y);
+                let velocity = new Phaser.Math.Vector2(Math.cos(angle), Math.sin(angle));
+                ball.body.setVelocity(velocity.x * 300, velocity.y * 300);
+            } else {
+                // Enemy takes damage
+                enemy.health -= player.damage;
+                resetBall(this);
+            }
+        }
+
+        function resetBall(scene) {
+            ball.setPosition(500, 300);
+            let angle = Phaser.Math.Angle.Between(500, 300, player.x, player.y);
+            let velocity = new Phaser.Math.Vector2(Math.cos(angle), Math.sin(angle));
+            ball.body.setVelocity(velocity.x * 300, velocity.y * 300);
+        }
+    </script>
+</body>
+</html>
