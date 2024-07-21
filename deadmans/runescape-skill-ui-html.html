@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Runescape Skill UI</title>
+    <title>OSRS Total Level Planner</title>
     <style>
         :root {
             --bg-color: #1a202c;
@@ -21,20 +21,38 @@
             color: var(--text-color);
             display: flex;
             justify-content: center;
-            align-items: flex-start;
+            align-items: center;
             min-height: 100vh;
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             box-sizing: border-box;
         }
 
         .container {
             background-color: var(--container-bg);
-            padding: 20px;
+            padding: 15px;
             border-radius: 12px;
-            width: 90vw;
-            max-width: 400px;
+            width: 95vw;
+            max-width: 1200px;
+            max-height: 95vh;
+            overflow-y: auto;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-wrapper {
+            display: flex;
+            gap: 15px;
+            height: calc(100% - 80px);
+        }
+
+        .left-column {
+            flex: 1;
+        }
+
+        .right-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
         }
 
         .input-group {
@@ -72,16 +90,18 @@
         .skills-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 8px;
+            margin-bottom: 15px;
+            overflow-y: auto;
+            max-height: calc(100vh - 200px);
         }
 
         .skill-item {
             background-color: var(--input-bg);
-            padding: 10px;
+            padding: 8px;
             border-radius: 8px;
             text-align: center;
-            font-size: 14px;
+            font-size: 12px;
         }
 
         .skill-controls {
@@ -91,7 +111,7 @@
             margin-top: 5px;
         }
 
-        .skill-controls input {
+        .skill-controls input[type="number"] {
             width: 35px;
             text-align: center;
             background-color: var(--container-bg);
@@ -101,7 +121,15 @@
             padding: 2px;
             font-size: 14px;
             margin: 0 4px;
-            maxlength: 2;
+            -webkit-appearance: textfield;
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        .skill-controls input[type="number"]::-webkit-inner-spin-button,
+        .skill-controls input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
 
         .skill-controls button {
@@ -116,17 +144,6 @@
             touch-action: manipulation;
         }
 
-        .total-level, .threshold-comparison {
-            background-color: var(--input-bg);
-            padding: 10px;
-            border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-
         .error {
             color: var(--error-color);
             margin-bottom: 10px;
@@ -134,36 +151,119 @@
             font-size: 14px;
         }
 
-        .threshold-comparison select {
-            background-color: var(--container-bg);
-            color: var(--text-color);
-            border: none;
-            border-radius: 4px;
-            padding: 4px;
-            font-size: 12px;
+        .planned-levels-summary {
+            background-color: var(--input-bg);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            flex-grow: 1;
+            overflow-y: auto;
+            max-height: calc(50vh - 100px);
         }
 
-        #threshold-difference {
-            margin-top: 5px;
+        .planned-levels-summary h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .planned-levels-summary ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .planned-levels-summary li {
+            margin-bottom: 5px;
+        }
+
+        .level-planner {
+            background-color: var(--input-bg);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .level-planner h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: var(--text-color);
+            font-size: 1.2em;
+        }
+
+        .level-planner .input-group {
+            display: flex;
+            margin-bottom: 20px;
+        }
+
+        .level-planner input[type="number"] {
+            flex-grow: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 6px 0 0 6px;
+            background-color: var(--container-bg);
+            color: var(--text-color);
+            font-size: 14px;
+        }
+
+        .level-planner button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 0 6px 6px 0;
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 14px;
+        }
+
+        .level-planner button:hover {
+            background-color: var(--button-hover);
+        }
+
+        .level-plan-summary {
+            background-color: var(--container-bg);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .summary-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .summary-label {
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+
+        .summary-value {
             font-weight: bold;
-            font-size: 12px;
+            color: var(--text-color);
         }
 
         @media (max-width: 768px) {
             body {
                 align-items: flex-start;
-                padding-top: 20px;
+                padding-top: 10px;
             }
 
             .container {
                 width: 95vw;
                 padding: 15px;
                 max-width: none;
+                max-height: none;
+                overflow-y: visible;
             }
 
             .skills-grid {
                 grid-template-columns: repeat(3, 1fr);
                 gap: 10px;
+                max-height: none;
             }
 
             .skill-item {
@@ -197,18 +297,13 @@
                 border-radius: 6px;
             }
 
-            .threshold-comparison {
+            .content-wrapper {
                 flex-direction: column;
-                align-items: stretch;
+                height: auto;
             }
 
-            .threshold-comparison select {
-                margin-top: 10px;
-                width: 100%;
-            }
-
-            #threshold-difference {
-                margin-top: 10px;
+            .planned-levels-summary {
+                max-height: none;
             }
         }
 
@@ -217,34 +312,56 @@
                 grid-template-columns: repeat(2, 1fr);
             }
         }
+
+        h1 {
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: var(--text-color);
+            font-size: 1.5em;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <h1>OSRS Total Level Planner</h1>
         <div class="input-group">
             <input type="text" id="username" placeholder="Enter username">
             <button onclick="importHighscores()">🔍 Import</button>
         </div>
         <div id="error" class="error"></div>
-        <div id="skills-grid" class="skills-grid"></div>
-        <div class="total-level">
-            <span>Total level:</span>
-            <span id="total-level">0</span>
-        </div>
-        <div class="threshold-comparison">
-            <div>
-                <label for="threshold-select">Compare to threshold:</label>
-                <select id="threshold-select" onchange="updateThresholdComparison()">
-                    <option value="750">750</option>
-                    <option value="1000">1000</option>
-                    <option value="1250">1250</option>
-                    <option value="1500">1500</option>
-                    <option value="1750">1750</option>
-                    <option value="2000" selected>2000</option>
-                    <option value="2200">2200</option>
-                </select>
+        <div class="content-wrapper">
+            <div class="left-column">
+                <div id="skills-grid" class="skills-grid"></div>
             </div>
-            <div id="threshold-difference"></div>
+            <div class="right-column">
+                <div id="planned-levels-summary" class="planned-levels-summary"></div>
+                <div class="level-planner">
+                    <h3>Level Planner</h3>
+                    <div class="input-group">
+                        <input type="number" id="target-total-level" placeholder="Target Total Level" min="1" max="9999">
+                        <button onclick="setTargetTotalLevel()">Set Target</button>
+                    </div>
+                    <div id="level-plan-summary" class="level-plan-summary">
+                        <div class="summary-item">
+                            <span class="summary-label">Current Total Level:</span>
+                            <span class="summary-value" id="current-total-level">1533</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Planned Levels:</span>
+                            <span class="summary-value" id="planned-levels">33</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">New Total Level:</span>
+                            <span class="summary-value" id="new-total-level">1566</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Remaining to target:</span>
+                            <span class="summary-value" id="remaining-to-target">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -261,10 +378,15 @@
         ];
 
         let skillLevels = {};
+        let importedLevels = {};
+        let plannedLevels = {};
+        let targetTotalLevel = 0;
 
         function initializeSkills() {
             skillOrder.forEach(skill => {
                 skillLevels[skill] = 1;
+                importedLevels[skill] = 1;
+                plannedLevels[skill] = 0;
             });
             renderSkills();
         }
@@ -278,41 +400,69 @@
                 skillElement.className = 'skill-item';
                 skillElement.innerHTML = `
                     <div>${skill}</div>
+                    <div>Level: ${skillLevels[skill]}</div>
                     <div class="skill-controls">
-                        <button onclick="updateSkill('${skill}', -1)">-</button>
-                        <input type="number" value="${skillLevels[skill]}" min="1" max="99" onchange="updateSkill('${skill}', this.value)" maxlength="2">
-                        <button onclick="updateSkill('${skill}', 1)">+</button>
+                        <button onclick="updatePlannedSkill('${skill}', -1)">-</button>
+                        <input type="number" value="${plannedLevels[skill]}" min="0" max="${99 - skillLevels[skill]}" onchange="updatePlannedSkill('${skill}', this.value)" maxlength="2">
+                        <button onclick="updatePlannedSkill('${skill}', 1)">+</button>
                     </div>
                 `;
                 gridElement.appendChild(skillElement);
             });
 
-            updateTotalLevel();
+            updatePlannedLevelsSummary();
+            updateLevelPlanSummary();
         }
 
-        function updateSkill(skill, change) {
+        function updatePlannedSkill(skill, change) {
             if (typeof change === 'string') {
-                change = parseInt(change) - skillLevels[skill];
+                change = parseInt(change) - plannedLevels[skill];
             }
-            skillLevels[skill] = Math.max(1, Math.min(99, skillLevels[skill] + change));
+            plannedLevels[skill] = Math.max(0, Math.min(99 - skillLevels[skill], plannedLevels[skill] + change));
             renderSkills();
         }
 
-        function updateTotalLevel() {
-            const totalLevel = Object.values(skillLevels).reduce((sum, level) => sum + level, 0);
-            document.getElementById('total-level').textContent = Math.min(9999, totalLevel);
-            updateThresholdComparison();
+        function setTargetTotalLevel() {
+            targetTotalLevel = Math.min(9999, Math.max(1, parseInt(document.getElementById('target-total-level').value) || 0));
+            updateLevelPlanSummary();
         }
 
-        function updateThresholdComparison() {
-            const totalLevel = Math.min(9999, Object.values(skillLevels).reduce((sum, level) => sum + level, 0));
-            const thresholdSelect = document.getElementById('threshold-select');
-            const thresholdDifference = document.getElementById('threshold-difference');
-            const selectedThreshold = parseInt(thresholdSelect.value);
+        function updateLevelPlanSummary() {
+            const currentTotal = Object.values(skillLevels).reduce((sum, level) => sum + level, 0);
+            const plannedTotal = Object.values(plannedLevels).reduce((sum, level) => sum + level, 0);
+            const totalLevel = currentTotal + plannedTotal;
+            
+            document.getElementById('current-total-level').textContent = currentTotal;
+            document.getElementById('planned-levels').textContent = plannedTotal;
+            document.getElementById('new-total-level').textContent = totalLevel;
+            
+            if (targetTotalLevel > 0) {
+                const remaining = Math.max(0, targetTotalLevel - totalLevel);
+                document.getElementById('remaining-to-target').textContent = remaining;
+            } else {
+                document.getElementById('remaining-to-target').textContent = '-';
+            }
+        }
 
-            const difference = selectedThreshold - totalLevel;
-            const sign = difference > 0 ? '+' : '';
-            thresholdDifference.textContent = `Difference: ${sign}${difference}`;
+        function updatePlannedLevelsSummary() {
+            const summaryElement = document.getElementById('planned-levels-summary');
+            summaryElement.innerHTML = '<h3>Planned Level Increases</h3>';
+
+            const plannedSkills = Object.entries(plannedLevels)
+                .filter(([skill, levels]) => levels > 0)
+                .sort((a, b) => b[1] - a[1]);
+
+            if (plannedSkills.length === 0) {
+                summaryElement.innerHTML += '<p>No planned level increases yet.</p>';
+            } else {
+                const summaryList = document.createElement('ul');
+                plannedSkills.forEach(([skill, levels]) => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `${skill}: +${levels} (${skillLevels[skill]} → ${skillLevels[skill] + levels})`;
+                    summaryList.appendChild(listItem);
+                });
+                summaryElement.appendChild(summaryList);
+            }
         }
 
         async function importHighscores() {
@@ -352,6 +502,8 @@
                         console.log(`${skill}: ${skillLevels[skill]}`);
                     }
                 });
+                importedLevels = {...skillLevels};
+                plannedLevels = Object.fromEntries(Object.keys(skillLevels).map(skill => [skill, 0]));
                 renderSkills();
                 console.log('Skills updated successfully');
             } catch (error) {
@@ -360,8 +512,20 @@
             }
         }
 
-        initializeSkills();
-        updateThresholdComparison();
+        function setupUsernameInputListener() {
+            const usernameInput = document.getElementById('username');
+            usernameInput.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault(); // Prevent form submission if within a form
+                    importHighscores();
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setupUsernameInputListener();
+            initializeSkills();
+        });
     </script>
 </body>
 </html>
