@@ -397,12 +397,7 @@
             if (rightPressed && player.x + player.width < canvas.width) player.x += playerSpeed;
 
             // Ball movement
-            if (ball.paused) {
-                ball.pauseTimer -= deltaTime;
-                if (ball.pauseTimer <= 0) {
-                    ball.paused = false;
-                }
-            } else {
+            if (!ball.paused) {
                 let targetX, targetY;
                 if (ball.target === 'player') {
                     targetX = player.x + player.width / 2;
@@ -416,37 +411,12 @@
                 ball.x += Math.cos(angle) * ball.speed * deltaTime * 120; // Doubled speed factor
                 ball.y += Math.sin(angle) * ball.speed * deltaTime * 120; // Doubled speed factor
 
-                // Ball collision with top and bottom
-                if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
-                    ball.y = Math.max(ball.radius, Math.min(canvas.height - ball.radius, ball.y));
-                }
-
-                // Ball collision with player
-                if (ball.x - ball.radius < player.x + player.width &&
-                    ball.y > player.y &&
-                    ball.y < player.y + player.height) {
-                    if (player.barrier.active) {
-                        ball.speed *= 1.1;
-                        ball.target = 'enemy';
-                    } else {
-                        player.health--;
-                        resetBall();
-                    }
-                }
-
-                // Ball collision with enemy
-                if (ball.x + ball.radius > currentEnemy.x &&
-                    ball.y > currentEnemy.y &&
-                    ball.y < currentEnemy.y + currentEnemy.height) {
-                    if (isMultiplayer) {
-                        ball.speed *= 1.1;
-                        ball.target = 'player';
-                    } else {
-                        currentEnemy.health -= player.damage;
-                        resetBall();
-                        damageEffect.active = true;
-                        damageEffect.timer = damageEffect.duration;
-                    }
+                // Ball collision logic
+                handleBallCollisions();
+            } else {
+                ball.pauseTimer -= deltaTime;
+                if (ball.pauseTimer <= 0) {
+                    ball.paused = false;
                 }
             }
 
@@ -459,6 +429,67 @@
             }
 
             // Update effects
+            updateEffects(deltaTime);
+
+            // Check game over and stage clear conditions
+            checkGameConditions();
+
+            if (isMultiplayer) {
+                sendPlayerInput();
+                if (isHost) {
+                    sendGameState();
+                }
+            }
+        }
+
+        function handleBallCollisions() {
+            // Ball collision with top and bottom
+            if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
+                ball.y = Math.max(ball.radius, Math.min(canvas.height - ball.radius, ball.y));
+            }
+
+            // Ball collision with player
+            if (ball.x - ball.radius < player.x + player.width &&
+                ball.y > player.y &&
+                ball.y < player.y + player.height) {
+                if (player.barrier.active) {
+                    ball.speed *= 1.1;
+                    ball.target = 'enemy';
+                } else {
+                    player.health--;
+                    resetBall();
+                }
+            }
+
+            // Ball collision with enemy
+            if (ball.x + ball.radius > currentEnemy.x &&
+                ball.y > currentEnemy.y &&
+                ball.y < currentEnemy.y + currentEnemy.height) {
+                if (isMultiplayer) {
+                    if (currentEnemy.barrier.active) {
+                        ball.speed *= 1.1;
+                        ball.target = 'player';
+                    } else {
+                        currentEnemy.health--;
+                        resetBall();
+                    }
+                } else {
+                    if (Math.random() < currentEnemy.reflectProb) {
+                        ball.speed *= 1.1;
+                        ball.target = 'player';
+                        reflectionEffect.active = true;
+                        reflectionEffect.timer = reflectionEffect.duration;
+                    } else {
+                        currentEnemy.health -= player.damage;
+                        resetBall();
+                        damageEffect.active = true;
+                        damageEffect.timer = damageEffect.duration;
+                    }
+                }
+            }
+        }
+
+        function updateEffects(deltaTime) {
             if (reflectionEffect.active) {
                 reflectionEffect.timer -= deltaTime;
                 if (reflectionEffect.timer <= 0) {
@@ -472,29 +503,27 @@
                     damageEffect.active = false;
                 }
             }
+        }
 
-            // Check game over conditions
+        function checkGameConditions() {
             if (player.health <= 0) {
                 gameOver = true;
                 replayButton.style.display = 'block';
             }
 
-            // Check for stage clear
             if (currentEnemy.health <= 0) {
-                currentStage++;
-                if (currentStage < enemies.length) {
-                    stageClear = true;
-                    powerUpContainer.style.display = 'block';
-                } else {
+                if (isMultiplayer) {
                     gameOver = true;
                     replayButton.style.display = 'block';
-                }
-            }
-
-            if (isMultiplayer) {
-                sendPlayerInput();
-                if (isHost) {
-                    sendGameState();
+                } else {
+                    currentStage++;
+                    if (currentStage < enemies.length) {
+                        stageClear = true;
+                        powerUpContainer.style.display = 'block';
+                    } else {
+                        gameOver = true;
+                        replayButton.style.display = 'block';
+                    }
                 }
             }
         }
