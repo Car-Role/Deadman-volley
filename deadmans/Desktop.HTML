@@ -446,16 +446,21 @@
                 if (ball.x + ball.radius > currentEnemy.x &&
                     ball.y > currentEnemy.y &&
                     ball.y < currentEnemy.y + currentEnemy.height) {
-                    if (Math.random() < currentEnemy.reflectProb) {
+                    if (isMultiplayer) {
                         ball.speed *= 1.1;
                         ball.target = 'player';
-                        reflectionEffect.active = true;
-                        reflectionEffect.timer = reflectionEffect.duration;
                     } else {
-                        currentEnemy.health -= player.damage;
-                        resetBall();
-                        damageEffect.active = true;
-                        damageEffect.timer = damageEffect.duration;
+                        if (Math.random() < currentEnemy.reflectProb) {
+                            ball.speed *= 1.1;
+                            ball.target = 'player';
+                            reflectionEffect.active = true;
+                            reflectionEffect.timer = reflectionEffect.duration;
+                        } else {
+                            currentEnemy.health -= player.damage;
+                            resetBall();
+                            damageEffect.active = true;
+                            damageEffect.timer = damageEffect.duration;
+                        }
                     }
                 }
             }
