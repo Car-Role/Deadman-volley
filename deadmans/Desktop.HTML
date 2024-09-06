@@ -118,6 +118,21 @@
         #connectButton:hover, #hostButton:hover {
             background-color: #45a049;
         }
+        #copyPeerIdButton {
+            display: none;
+            margin-left: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        #copyPeerIdButton:hover {
+            background-color: #45a049;
+        }
     </style>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 </head>
@@ -157,6 +172,7 @@
         <input type="text" id="peerIdInput" placeholder="Enter Peer ID">
         <button id="connectButton">Connect</button>
         <button id="hostButton">Host Game</button>
+        <button id="copyPeerIdButton" style="display: none;">Copy Peer ID</button>
     </div>
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -591,15 +607,21 @@
         const peerIdInput = document.getElementById('peerIdInput');
         const connectButton = document.getElementById('connectButton');
         const hostButton = document.getElementById('hostButton');
+        const copyPeerIdButton = document.getElementById('copyPeerIdButton');
 
         connectButton.addEventListener('click', connectToPeer);
         hostButton.addEventListener('click', hostGame);
+        copyPeerIdButton.addEventListener('click', copyPeerId);
+
+        let myPeerId = '';
 
         function initializePeer() {
             peer = new Peer();
             peer.on('open', (id) => {
                 console.log('My peer ID is: ' + id);
-                alert('Your peer ID is: ' + id + '\nShare this with your friend to connect!');
+                myPeerId = id;
+                copyPeerIdButton.style.display = 'inline-block';
+                copyPeerIdButton.textContent = 'Copy Peer ID: ' + id;
             });
             peer.on('connection', (connection) => {
                 conn = connection;
@@ -683,6 +705,17 @@
                     }
                 });
             }
+        }
+
+        function copyPeerId() {
+            navigator.clipboard.writeText(myPeerId).then(() => {
+                copyPeerIdButton.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyPeerIdButton.textContent = 'Copy Peer ID: ' + myPeerId;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
         }
 
         // Start the game loop
