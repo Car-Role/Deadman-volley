@@ -739,7 +739,8 @@
             if (!isHost) {
                 ball = state.ball;
                 currentEnemy = state.player;
-                player = state.currentEnemy;
+                player.health = state.currentEnemy.health;
+                player.maxHealth = state.currentEnemy.maxHealth;
                 currentStage = state.currentStage;
                 gameOver = state.gameOver;
                 stageClear = state.stageClear;
@@ -751,15 +752,9 @@
         }
 
         function updateOpponentInput(input) {
-            if (isHost) {
-                currentEnemy.x = canvas.width - input.x - currentEnemy.width;
-                currentEnemy.y = input.y;
-                currentEnemy.barrier.active = input.barrier;
-            } else {
-                currentEnemy.x = canvas.width - input.x - currentEnemy.width;
-                currentEnemy.y = input.y;
-                currentEnemy.barrier.active = input.barrier;
-            }
+            currentEnemy.x = canvas.width - input.x - currentEnemy.width;
+            currentEnemy.y = input.y;
+            currentEnemy.barrier.active = input.barrier;
         }
 
         function sendGameState() {
