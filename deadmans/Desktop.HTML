@@ -198,11 +198,12 @@
             x: 500,
             y: 300,
             radius: 10,
-            speed: 7, // Doubled speed
-            initialSpeed: 7, // Doubled initial speed
-            target: 'player',
+            dx: 1,
+            dy: 0,
+            speed: 300,
+            initialSpeed: 300,
             paused: false,
-            pauseDuration: 1, // 1 second
+            pauseDuration: 1,
             pauseTimer: 0
         };
 
@@ -303,10 +304,13 @@
             else if (e.key === 'ArrowDown' || e.key === 's') downPressed = true;
             else if (e.key === 'ArrowLeft' || e.key === 'a') leftPressed = true;
             else if (e.key === 'ArrowRight' || e.key === 'd') rightPressed = true;
-            else if (e.key === ' ' && !player.barrier.active && player.barrier.canActivate) {
-                player.barrier.active = true;
-                player.barrier.timer = player.barrier.duration;
-                player.barrier.canActivate = false;
+            else if (e.key === ' ') {
+                e.preventDefault(); // Prevent scrolling
+                if (!player.barrier.active && player.barrier.canActivate) {
+                    player.barrier.active = true;
+                    player.barrier.timer = player.barrier.duration;
+                    player.barrier.canActivate = false;
+                }
             }
         }
 
@@ -387,10 +391,10 @@
 
         // Modify the update function to accept deltaTime
         function update(deltaTime) {
-            if (gameOver || stageClear || (isMultiplayer && gamePaused)) return;
+            if (gameOver || stageClear) return;
 
             // Player movement
-            const playerSpeed = 600 * deltaTime; // Doubled speed in pixels per second
+            const playerSpeed = 300 * deltaTime;
             if (upPressed && player.y > 0) player.y -= playerSpeed;
             if (downPressed && player.y + player.height < canvas.height) player.y += playerSpeed;
             if (leftPressed && player.x > 0) player.x -= playerSpeed;
@@ -398,21 +402,25 @@
 
             // Ball movement
             if (!ball.paused) {
-                let targetX, targetY;
-                if (ball.target === 'player') {
-                    targetX = player.x + player.width / 2;
-                    targetY = player.y + player.height / 2;
-                } else {
-                    targetX = currentEnemy.x + currentEnemy.width / 2;
-                    targetY = currentEnemy.y + currentEnemy.height / 2;
+                ball.x += ball.dx * ball.speed * deltaTime;
+                ball.y += ball.dy * ball.speed * deltaTime;
+
+                // Ball collision with top and bottom
+                if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
+                    ball.dy = -ball.dy;
                 }
 
-                let angle = Math.atan2(targetY - ball.y, targetX - ball.x);
-                ball.x += Math.cos(angle) * ball.speed * deltaTime * 120; // Doubled speed factor
-                ball.y += Math.sin(angle) * ball.speed * deltaTime * 120; // Doubled speed factor
-
-                // Ball collision logic
-                handleBallCollisions();
+                // Ball collision with players
+                if (checkCollision(ball, player) || checkCollision(ball, currentEnemy)) {
+                    const collidedPlayer = checkCollision(ball, player) ? player : currentEnemy;
+                    if (collidedPlayer.barrier.active) {
+                        ball.dx = -ball.dx;
+                        ball.speed *= 1.1; // Increase speed on successful shield
+                    } else {
+                        collidedPlayer.health--;
+                        resetBall();
+                    }
+                }
             } else {
                 ball.pauseTimer -= deltaTime;
                 if (ball.pauseTimer <= 0) {
@@ -425,13 +433,21 @@
                 player.barrier.timer -= deltaTime;
                 if (player.barrier.timer <= 0) {
                     player.barrier.active = false;
+                    player.barrier.canActivate = true;
                 }
             }
 
-            // Update effects
-            updateEffects(deltaTime);
+            // Enemy AI for single-player mode
+            if (!isMultiplayer) {
+                const enemySpeed = 200 * deltaTime;
+                if (ball.y < currentEnemy.y + currentEnemy.height / 2) {
+                    currentEnemy.y -= enemySpeed;
+                } else {
+                    currentEnemy.y += enemySpeed;
+                }
+                currentEnemy.y = Math.max(0, Math.min(canvas.height - currentEnemy.height, currentEnemy.y));
+            }
 
-            // Check game over and stage clear conditions
             checkGameConditions();
 
             if (isMultiplayer) {
@@ -442,67 +458,12 @@
             }
         }
 
-        function handleBallCollisions() {
-            // Ball collision with top and bottom
-            if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
-                ball.y = Math.max(ball.radius, Math.min(canvas.height - ball.radius, ball.y));
-            }
-
-            // Ball collision with player
-            if (ball.x - ball.radius < player.x + player.width &&
-                ball.y > player.y &&
-                ball.y < player.y + player.height) {
-                if (player.barrier.active) {
-                    ball.speed *= 1.1;
-                    ball.target = 'enemy';
-                } else {
-                    player.health--;
-                    resetBall();
-                }
-            }
-
-            // Ball collision with enemy
-            if (ball.x + ball.radius > currentEnemy.x &&
-                ball.y > currentEnemy.y &&
-                ball.y < currentEnemy.y + currentEnemy.height) {
-                if (isMultiplayer) {
-                    if (currentEnemy.barrier.active) {
-                        ball.speed *= 1.1;
-                        ball.target = 'player';
-                    } else {
-                        currentEnemy.health--;
-                        resetBall();
-                    }
-                } else {
-                    if (Math.random() < currentEnemy.reflectProb) {
-                        ball.speed *= 1.1;
-                        ball.target = 'player';
-                        reflectionEffect.active = true;
-                        reflectionEffect.timer = reflectionEffect.duration;
-                    } else {
-                        currentEnemy.health -= player.damage;
-                        resetBall();
-                        damageEffect.active = true;
-                        damageEffect.timer = damageEffect.duration;
-                    }
-                }
-            }
-        }
-
-        function updateEffects(deltaTime) {
-            if (reflectionEffect.active) {
-                reflectionEffect.timer -= deltaTime;
-                if (reflectionEffect.timer <= 0) {
-                    reflectionEffect.active = false;
-                }
-            }
-
-            if (damageEffect.active) {
-                damageEffect.timer -= deltaTime;
-                if (damageEffect.timer <= 0) {
-                    damageEffect.active = false;
-                }
-            }
+        function checkCollision(ball, rect) {
+            const closestX = Math.max(rect.x, Math.min(ball.x, rect.x + rect.width));
+            const closestY = Math.max(rect.y, Math.min(ball.y, rect.y + rect.height));
+            const distanceX = ball.x - closestX;
+            const distanceY = ball.y - closestY;
+            return (distanceX * distanceX + distanceY * distanceY) < (ball.radius * ball.radius);
         }
 
         function checkGameConditions() {
@@ -532,6 +493,8 @@
         function resetBall() {
             ball.x = canvas.width / 2;
             ball.y = canvas.height / 2;
+            ball.dx = Math.random() > 0.5 ? 1 : -1;
+            ball.dy = Math.random() * 2 - 1;
             ball.speed = ball.initialSpeed;
             ball.paused = true;
             ball.pauseTimer = ball.pauseDuration;
@@ -595,7 +558,6 @@
             ball.x = 500;
             ball.y = 300;
             ball.speed = ball.initialSpeed;
-            ball.target = 'player';
             ball.paused = true;
             ball.pauseTimer = ball.pauseDuration;
 
