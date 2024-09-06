@@ -167,6 +167,7 @@
         <p>1. To host a game: Click "Host Game" and share your Peer ID with your friend.</p>
         <p>2. To join a game: Enter your friend's Peer ID and click "Connect".</p>
         <p>3. The host plays on the left side, the joining player on the right.</p>
+        <p>4. Press Spacebar to start the game after connection is established.</p>
     </div>
     <div id="connectionControls">
         <input type="text" id="peerIdInput" placeholder="Enter Peer ID">
@@ -266,16 +267,26 @@
         let rightPressed = false;
         let shieldPressed = false;
 
+        let gamePaused = true;
+        let connectionEstablished = false;
+
         function keyDownHandler(e) {
             if (e.key === 'ArrowUp' || e.key === 'w') upPressed = true;
             else if (e.key === 'ArrowDown' || e.key === 's') downPressed = true;
             else if (e.key === 'ArrowLeft' || e.key === 'a') leftPressed = true;
             else if (e.key === 'ArrowRight' || e.key === 'd') rightPressed = true;
-            else if (e.key === ' ' && !player.barrier.active && player.barrier.canActivate) {
-                shieldPressed = true;
-                player.barrier.active = true;
-                player.barrier.timer = player.barrier.duration;
-                player.barrier.canActivate = false;
+            else if (e.key === ' ') {
+                if (connectionEstablished && gamePaused) {
+                    gamePaused = false;
+                    if (conn) {
+                        conn.send({ type: 'startGame' });
+                    }
+                } else if (!player.barrier.active && player.barrier.canActivate) {
+                    shieldPressed = true;
+                    player.barrier.active = true;
+                    player.barrier.timer = player.barrier.duration;
+                    player.barrier.canActivate = false;
+                }
             }
         }
 
@@ -350,7 +361,7 @@
 
         // Modify the update function to accept deltaTime
         function update(deltaTime) {
-            if (gameOver || stageClear) return;
+            if (gameOver || stageClear || gamePaused) return;
 
             // Player movement
             const playerSpeed = 600 * deltaTime; // Doubled speed in pixels per second
@@ -502,6 +513,13 @@
                 ctx.textAlign = 'center';
                 ctx.fillText('Stage Clear! Choose a power-up:', canvas.width / 2, canvas.height / 2 - 150);
             }
+
+            if (gamePaused && connectionEstablished) {
+                ctx.font = '30px Arial';
+                ctx.fillStyle = 'black';
+                ctx.textAlign = 'center';
+                ctx.fillText('Press Spacebar to Start', canvas.width / 2, canvas.height / 2);
+            }
         }
 
         // Replace the existing gameLoop function with this one
@@ -633,12 +651,14 @@
             const peerId = peerIdInput.value;
             conn = peer.connect(peerId);
             setupConnection();
+            gamePaused = true;
         }
 
         function hostGame() {
             isHost = true;
             initializePeer();
             resetGame();
+            gamePaused = true;
         }
 
         function setupConnection() {
@@ -647,6 +667,8 @@
             });
             conn.on('open', () => {
                 console.log('Connected to peer');
+                connectionEstablished = true;
+                alert('Connection established! Press Spacebar to start the game.');
                 if (!isHost) {
                     resetGame();
                 }
@@ -658,6 +680,8 @@
                 updateGameState(data.state);
             } else if (data.type === 'playerInput') {
                 updateOpponentInput(data.input);
+            } else if (data.type === 'startGame') {
+                gamePaused = false;
             }
         }
 
