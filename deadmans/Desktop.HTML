@@ -171,7 +171,6 @@
         <p>1. To host a game: Click "Host Game" and share your Peer ID with your friend.</p>
         <p>2. To join a game: Enter your friend's Peer ID and click "Connect".</p>
         <p>3. The host plays on the left side, the joining player on the right.</p>
-        <p>4. Press Spacebar to start the game after connection is established.</p>
     </div>
     <div id="connectionControls" style="display: none;">
         <input type="text" id="peerIdInput" placeholder="Enter Peer ID">
@@ -304,17 +303,10 @@
             else if (e.key === 'ArrowDown' || e.key === 's') downPressed = true;
             else if (e.key === 'ArrowLeft' || e.key === 'a') leftPressed = true;
             else if (e.key === 'ArrowRight' || e.key === 'd') rightPressed = true;
-            else if (e.key === ' ') {
-                if (isMultiplayer && connectionEstablished && gamePaused) {
-                    gamePaused = false;
-                    if (conn) {
-                        conn.send({ type: 'startGame' });
-                    }
-                } else if (!player.barrier.active && player.barrier.canActivate) {
-                    player.barrier.active = true;
-                    player.barrier.timer = player.barrier.duration;
-                    player.barrier.canActivate = false;
-                }
+            else if (e.key === ' ' && !player.barrier.active && player.barrier.canActivate) {
+                player.barrier.active = true;
+                player.barrier.timer = player.barrier.duration;
+                player.barrier.canActivate = false;
             }
         }
 
@@ -450,17 +442,10 @@
                         ball.speed *= 1.1;
                         ball.target = 'player';
                     } else {
-                        if (Math.random() < currentEnemy.reflectProb) {
-                            ball.speed *= 1.1;
-                            ball.target = 'player';
-                            reflectionEffect.active = true;
-                            reflectionEffect.timer = reflectionEffect.duration;
-                        } else {
-                            currentEnemy.health -= player.damage;
-                            resetBall();
-                            damageEffect.active = true;
-                            damageEffect.timer = damageEffect.duration;
-                        }
+                        currentEnemy.health -= player.damage;
+                        resetBall();
+                        damageEffect.active = true;
+                        damageEffect.timer = damageEffect.duration;
                     }
                 }
             }
@@ -554,13 +539,6 @@
                 ctx.textAlign = 'center';
                 ctx.fillText('Stage Clear! Choose a power-up:', canvas.width / 2, canvas.height / 2 - 150);
             }
-
-            if (isMultiplayer && gamePaused && connectionEstablished) {
-                ctx.font = '30px Arial';
-                ctx.fillStyle = 'black';
-                ctx.textAlign = 'center';
-                ctx.fillText('Press Spacebar to Start', canvas.width / 2, canvas.height / 2);
-            }
         }
 
         // Replace the existing gameLoop function with this one
@@ -624,7 +602,7 @@
                     player.x = canvas.width - 70;
                     currentEnemy.x = 50;
                 }
-                gamePaused = true;
+                gamePaused = false;
             } else {
                 player.x = 50;
                 currentEnemy.x = canvas.width - 70;
@@ -720,12 +698,13 @@
             conn.on('open', () => {
                 console.log('Connected to peer');
                 connectionEstablished = true;
-                alert('Connection established! Press Spacebar to start the game.');
+                alert('Connection established! The game will start automatically.');
                 canvas.style.display = 'block';
                 connectionControls.style.display = 'none';
                 if (!isHost) {
                     resetGame();
                 }
+                gamePaused = false;
                 startGameLoop();
             });
         }
@@ -735,8 +714,6 @@
                 updateGameState(data.state);
             } else if (data.type === 'playerInput') {
                 updateOpponentInput(data.input);
-            } else if (data.type === 'startGame') {
-                gamePaused = false;
             }
         }
 
