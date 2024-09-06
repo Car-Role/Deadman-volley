@@ -148,6 +148,10 @@
         <p>Controls: Arrow keys or WASD to move, Spacebar for shield (0.25s duration)</p>
         <p>Reflect the ball to damage the enemy. Avoid getting hit!</p>
         <p>Defeat 3 stages of enemies, with the final being a boss!</p>
+        <h3>Multiplayer Instructions:</h3>
+        <p>1. To host a game: Click "Host Game" and share your Peer ID with your friend.</p>
+        <p>2. To join a game: Enter your friend's Peer ID and click "Connect".</p>
+        <p>3. The host plays on the left side, the joining player on the right.</p>
     </div>
     <div id="connectionControls">
         <input type="text" id="peerIdInput" placeholder="Enter Peer ID">
@@ -435,6 +439,11 @@
                     replayButton.style.display = 'block';
                 }
             }
+
+            if (isHost) {
+                sendGameState();
+            }
+            sendPlayerInput();
         }
 
         // Modify the resetBall function
@@ -531,6 +540,13 @@
             // Reset game state
             gameOver = false;
             replayButton.style.display = 'none';
+
+            if (isHost) {
+                currentEnemy.x = 930;
+            } else {
+                player.x = 930;
+                currentEnemy.x = 50;
+            }
         }
 
         function applyPowerUp(powerUpType) {
@@ -665,28 +681,6 @@
                         y: player.y
                     }
                 });
-            }
-        }
-
-        // Modify the update function
-        function update(deltaTime) {
-            // ... existing update logic ...
-
-            if (isHost) {
-                sendGameState();
-            }
-            sendPlayerInput();
-        }
-
-        // Modify the resetGame function
-        function resetGame() {
-            // ... existing reset logic ...
-
-            if (isHost) {
-                currentEnemy.x = 930;
-            } else {
-                player.x = 930;
-                currentEnemy.x = 50;
             }
         }
 
