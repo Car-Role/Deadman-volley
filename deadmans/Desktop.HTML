@@ -97,7 +97,29 @@
             text-align: center;
             z-index: 10;
         }
+        #connectionControls {
+            margin-top: 20px;
+            text-align: center;
+        }
+        #peerIdInput {
+            margin-right: 10px;
+            padding: 5px;
+        }
+        #connectButton, #hostButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        #connectButton:hover, #hostButton:hover {
+            background-color: #45a049;
+        }
     </style>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 </head>
 <body>
     <h1>Deadman's Volley</h1>
@@ -126,6 +148,11 @@
         <p>Controls: Arrow keys or WASD to move, Spacebar for shield (0.25s duration)</p>
         <p>Reflect the ball to damage the enemy. Avoid getting hit!</p>
         <p>Defeat 3 stages of enemies, with the final being a boss!</p>
+    </div>
+    <div id="connectionControls">
+        <input type="text" id="peerIdInput" placeholder="Enter Peer ID">
+        <button id="connectButton">Connect</button>
+        <button id="hostButton">Host Game</button>
     </div>
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -541,7 +568,130 @@
             gameLoop(performance.now());
         }
 
+        let peer;
+        let conn;
+        let isHost = false;
+
+        const peerIdInput = document.getElementById('peerIdInput');
+        const connectButton = document.getElementById('connectButton');
+        const hostButton = document.getElementById('hostButton');
+
+        connectButton.addEventListener('click', connectToPeer);
+        hostButton.addEventListener('click', hostGame);
+
+        function initializePeer() {
+            peer = new Peer();
+            peer.on('open', (id) => {
+                console.log('My peer ID is: ' + id);
+            });
+            peer.on('connection', (connection) => {
+                conn = connection;
+                setupConnection();
+            });
+        }
+
+        function connectToPeer() {
+            const peerId = peerIdInput.value;
+            conn = peer.connect(peerId);
+            setupConnection();
+        }
+
+        function hostGame() {
+            isHost = true;
+            initializePeer();
+            resetGame();
+        }
+
+        function setupConnection() {
+            conn.on('data', (data) => {
+                handleReceivedData(data);
+            });
+            conn.on('open', () => {
+                console.log('Connected to peer');
+                if (!isHost) {
+                    resetGame();
+                }
+            });
+        }
+
+        function handleReceivedData(data) {
+            if (data.type === 'gameState') {
+                updateGameState(data.state);
+            } else if (data.type === 'playerInput') {
+                updateOpponentInput(data.input);
+            }
+        }
+
+        function updateGameState(state) {
+            if (!isHost) {
+                ball = state.ball;
+                player = state.player;
+                currentEnemy = state.currentEnemy;
+                currentStage = state.currentStage;
+                gameOver = state.gameOver;
+                stageClear = state.stageClear;
+            }
+        }
+
+        function updateOpponentInput(input) {
+            if (isHost) {
+                currentEnemy.y = input.y;
+            } else {
+                player.y = input.y;
+            }
+        }
+
+        function sendGameState() {
+            if (isHost && conn) {
+                conn.send({
+                    type: 'gameState',
+                    state: {
+                        ball,
+                        player,
+                        currentEnemy,
+                        currentStage,
+                        gameOver,
+                        stageClear
+                    }
+                });
+            }
+        }
+
+        function sendPlayerInput() {
+            if (conn) {
+                conn.send({
+                    type: 'playerInput',
+                    input: {
+                        y: player.y
+                    }
+                });
+            }
+        }
+
+        // Modify the update function
+        function update(deltaTime) {
+            // ... existing update logic ...
+
+            if (isHost) {
+                sendGameState();
+            }
+            sendPlayerInput();
+        }
+
+        // Modify the resetGame function
+        function resetGame() {
+            // ... existing reset logic ...
+
+            if (isHost) {
+                currentEnemy.x = 930;
+            } else {
+                player.x = 930;
+                currentEnemy.x = 50;
+            }
+        }
+
         // Start the game loop
+        initializePeer();
         requestAnimationFrame(gameLoop);
     </script>
 </body>
