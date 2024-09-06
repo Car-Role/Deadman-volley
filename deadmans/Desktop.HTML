@@ -212,8 +212,8 @@
             y: 270,
             width: 20,
             height: 60,
-            dy: 10, // Doubled movement speed
-            dx: 10, // Doubled movement speed
+            dx: 10,
+            dy: 10,
             maxHealth: 3,
             health: 3,
             damage: 1,
@@ -311,7 +311,6 @@
                         conn.send({ type: 'startGame' });
                     }
                 } else if (!player.barrier.active && player.barrier.canActivate) {
-                    shieldPressed = true;
                     player.barrier.active = true;
                     player.barrier.timer = player.barrier.duration;
                     player.barrier.canActivate = false;
@@ -350,8 +349,14 @@
         }
 
         function drawEnemy() {
-            ctx.fillStyle = currentStage === 2 ? 'purple' : 'green';
+            ctx.fillStyle = isHost ? 'green' : 'blue';
             ctx.fillRect(currentEnemy.x, currentEnemy.y, currentEnemy.width, currentEnemy.height);
+
+            if (currentEnemy.barrier.active) {
+                ctx.strokeStyle = 'cyan';
+                ctx.lineWidth = 6;
+                ctx.strokeRect(currentEnemy.x - 8, currentEnemy.y - 8, currentEnemy.width + 16, currentEnemy.height + 16);
+            }
 
             if (reflectionEffect.active) {
                 ctx.fillStyle = 'rgba(255, 255, 0, 0.5)';
@@ -397,7 +402,7 @@
             if (upPressed && player.y > 0) player.y -= playerSpeed;
             if (downPressed && player.y + player.height < canvas.height) player.y += playerSpeed;
             if (leftPressed && player.x > 0) player.x -= playerSpeed;
-            if (rightPressed && player.x + player.width < canvas.width / 2) player.x += playerSpeed;
+            if (rightPressed && player.x + player.width < canvas.width) player.x += playerSpeed;
 
             // Ball movement
             if (ball.paused) {
@@ -497,10 +502,10 @@
             }
 
             if (isMultiplayer) {
+                sendPlayerInput();
                 if (isHost) {
                     sendGameState();
                 }
-                sendPlayerInput();
             }
         }
 
@@ -609,17 +614,20 @@
             if (isMultiplayer) {
                 if (isHost) {
                     player.x = 50;
-                    currentEnemy.x = 930;
+                    currentEnemy.x = canvas.width - 70;
                 } else {
-                    player.x = 930;
+                    player.x = canvas.width - 70;
                     currentEnemy.x = 50;
                 }
                 gamePaused = true;
             } else {
                 player.x = 50;
-                currentEnemy.x = 930;
+                currentEnemy.x = canvas.width - 70;
                 gamePaused = false;
             }
+
+            player.y = canvas.height / 2 - player.height / 2;
+            currentEnemy.y = canvas.height / 2 - currentEnemy.height / 2;
         }
 
         function applyPowerUp(powerUpType) {
@@ -735,14 +743,22 @@
                 currentStage = state.currentStage;
                 gameOver = state.gameOver;
                 stageClear = state.stageClear;
+
+                // Flip the x-coordinates for the non-host player
+                player.x = canvas.width - player.x - player.width;
+                currentEnemy.x = canvas.width - currentEnemy.x - currentEnemy.width;
             }
         }
 
         function updateOpponentInput(input) {
             if (isHost) {
+                currentEnemy.x = canvas.width - input.x - currentEnemy.width;
                 currentEnemy.y = input.y;
+                currentEnemy.barrier.active = input.barrier;
             } else {
+                currentEnemy.x = canvas.width - input.x - currentEnemy.width;
                 currentEnemy.y = input.y;
+                currentEnemy.barrier.active = input.barrier;
             }
         }
 
@@ -767,7 +783,9 @@
                 conn.send({
                     type: 'playerInput',
                     input: {
-                        y: player.y
+                        x: player.x,
+                        y: player.y,
+                        barrier: player.barrier.active
                     }
                 });
             }
