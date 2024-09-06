@@ -599,6 +599,7 @@
             peer = new Peer();
             peer.on('open', (id) => {
                 console.log('My peer ID is: ' + id);
+                alert('Your peer ID is: ' + id + '\nShare this with your friend to connect!');
             });
             peer.on('connection', (connection) => {
                 conn = connection;
