@@ -138,6 +138,10 @@
 </head>
 <body>
     <h1>Deadman's Volley</h1>
+    <div id="gameMenu">
+        <button id="singlePlayerButton">Single Player</button>
+        <button id="multiPlayerButton">Multiplayer</button>
+    </div>
     <div style="position: relative;">
         <canvas id="gameCanvas" width="1000" height="600"></canvas>
         <div id="stageClearText"></div>
@@ -169,7 +173,7 @@
         <p>3. The host plays on the left side, the joining player on the right.</p>
         <p>4. Press Spacebar to start the game after connection is established.</p>
     </div>
-    <div id="connectionControls">
+    <div id="connectionControls" style="display: none;">
         <input type="text" id="peerIdInput" placeholder="Enter Peer ID">
         <button id="connectButton">Connect</button>
         <button id="hostButton">Host Game</button>
@@ -270,13 +274,37 @@
         let gamePaused = true;
         let connectionEstablished = false;
 
+        let isMultiplayer = false;
+        const gameMenu = document.getElementById('gameMenu');
+        const singlePlayerButton = document.getElementById('singlePlayerButton');
+        const multiPlayerButton = document.getElementById('multiPlayerButton');
+        const connectionControls = document.getElementById('connectionControls');
+
+        singlePlayerButton.addEventListener('click', startSinglePlayerGame);
+        multiPlayerButton.addEventListener('click', showMultiplayerMenu);
+
+        function startSinglePlayerGame() {
+            isMultiplayer = false;
+            gameMenu.style.display = 'none';
+            connectionControls.style.display = 'none';
+            resetGame();
+            gamePaused = false;
+            startGameLoop();
+        }
+
+        function showMultiplayerMenu() {
+            isMultiplayer = true;
+            gameMenu.style.display = 'none';
+            connectionControls.style.display = 'block';
+        }
+
         function keyDownHandler(e) {
             if (e.key === 'ArrowUp' || e.key === 'w') upPressed = true;
             else if (e.key === 'ArrowDown' || e.key === 's') downPressed = true;
             else if (e.key === 'ArrowLeft' || e.key === 'a') leftPressed = true;
             else if (e.key === 'ArrowRight' || e.key === 'd') rightPressed = true;
             else if (e.key === ' ') {
-                if (connectionEstablished && gamePaused) {
+                if (isMultiplayer && connectionEstablished && gamePaused) {
                     gamePaused = false;
                     if (conn) {
                         conn.send({ type: 'startGame' });
@@ -361,7 +389,7 @@
 
         // Modify the update function to accept deltaTime
         function update(deltaTime) {
-            if (gameOver || stageClear || gamePaused) return;
+            if (gameOver || stageClear || (isMultiplayer && gamePaused)) return;
 
             // Player movement
             const playerSpeed = 600 * deltaTime; // Doubled speed in pixels per second
@@ -467,10 +495,12 @@
                 }
             }
 
-            if (isHost) {
-                sendGameState();
+            if (isMultiplayer) {
+                if (isHost) {
+                    sendGameState();
+                }
+                sendPlayerInput();
             }
-            sendPlayerInput();
         }
 
         // Modify the resetBall function
@@ -514,7 +544,7 @@
                 ctx.fillText('Stage Clear! Choose a power-up:', canvas.width / 2, canvas.height / 2 - 150);
             }
 
-            if (gamePaused && connectionEstablished) {
+            if (isMultiplayer && gamePaused && connectionEstablished) {
                 ctx.font = '30px Arial';
                 ctx.fillStyle = 'black';
                 ctx.textAlign = 'center';
@@ -575,11 +605,19 @@
             gameOver = false;
             replayButton.style.display = 'none';
 
-            if (isHost) {
-                currentEnemy.x = 930;
+            if (isMultiplayer) {
+                if (isHost) {
+                    player.x = 50;
+                    currentEnemy.x = 930;
+                } else {
+                    player.x = 930;
+                    currentEnemy.x = 50;
+                }
+                gamePaused = true;
             } else {
-                player.x = 930;
-                currentEnemy.x = 50;
+                player.x = 50;
+                currentEnemy.x = 930;
+                gamePaused = false;
             }
         }
 
@@ -644,6 +682,7 @@
             peer.on('connection', (connection) => {
                 conn = connection;
                 setupConnection();
+                resetGame();
             });
         }
 
@@ -651,14 +690,11 @@
             const peerId = peerIdInput.value;
             conn = peer.connect(peerId);
             setupConnection();
-            gamePaused = true;
         }
 
         function hostGame() {
             isHost = true;
             initializePeer();
-            resetGame();
-            gamePaused = true;
         }
 
         function setupConnection() {
@@ -672,6 +708,7 @@
                 if (!isHost) {
                     resetGame();
                 }
+                startGameLoop();
             });
         }
 
@@ -742,9 +779,14 @@
             });
         }
 
-        // Start the game loop
-        initializePeer();
-        requestAnimationFrame(gameLoop);
+        // Start the game loop only after choosing a mode
+        gameMenu.style.display = 'block';
+        canvas.style.display = 'none';
+
+        function startGameLoop() {
+            canvas.style.display = 'block';
+            requestAnimationFrame(gameLoop);
+        }
     </script>
 </body>
 </html>
