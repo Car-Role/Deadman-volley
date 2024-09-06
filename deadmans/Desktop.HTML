@@ -296,6 +296,7 @@
             isMultiplayer = true;
             gameMenu.style.display = 'none';
             connectionControls.style.display = 'block';
+            initializePeer();
         }
 
         function keyDownHandler(e) {
@@ -695,6 +696,8 @@
         function hostGame() {
             isHost = true;
             initializePeer();
+            canvas.style.display = 'block';
+            connectionControls.style.display = 'none';
         }
 
         function setupConnection() {
@@ -705,6 +708,8 @@
                 console.log('Connected to peer');
                 connectionEstablished = true;
                 alert('Connection established! Press Spacebar to start the game.');
+                canvas.style.display = 'block';
+                connectionControls.style.display = 'none';
                 if (!isHost) {
                     resetGame();
                 }
@@ -725,8 +730,8 @@
         function updateGameState(state) {
             if (!isHost) {
                 ball = state.ball;
-                player = state.player;
-                currentEnemy = state.currentEnemy;
+                currentEnemy = state.player;
+                player = state.currentEnemy;
                 currentStage = state.currentStage;
                 gameOver = state.gameOver;
                 stageClear = state.stageClear;
@@ -737,12 +742,12 @@
             if (isHost) {
                 currentEnemy.y = input.y;
             } else {
-                player.y = input.y;
+                currentEnemy.y = input.y;
             }
         }
 
         function sendGameState() {
-            if (isHost && conn) {
+            if (isHost && conn && conn.open) {
                 conn.send({
                     type: 'gameState',
                     state: {
@@ -758,7 +763,7 @@
         }
 
         function sendPlayerInput() {
-            if (conn) {
+            if (conn && conn.open) {
                 conn.send({
                     type: 'playerInput',
                     input: {
