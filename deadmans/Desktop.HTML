@@ -193,6 +193,13 @@
         const fixedTimeStep = 1000 / 120; // 120 FPS for faster game play
         let accumulator = 0;
 
+        // Move this declaration before it's used
+        const enemies = [
+            { width: 20, height: 60, maxHealth: 3, reflectProb: 0.7, barrier: { active: false, duration: 0.25, timer: 0, canActivate: true } },
+            { width: 30, height: 90, maxHealth: 5, reflectProb: 0.8, barrier: { active: false, duration: 0.25, timer: 0, canActivate: true } },
+            { width: 40, height: 120, maxHealth: 7, reflectProb: 0.9, barrier: { active: false, duration: 0.25, timer: 0, canActivate: true } }
+        ];
+
         // Game objects
         const ball = {
             x: 500,
@@ -233,12 +240,6 @@
             health: enemies[0].maxHealth,
             barrier: { ...enemies[0].barrier }
         };
-
-        const enemies = [
-            { width: 20, height: 60, maxHealth: 3, reflectProb: 0.7, barrier: { active: false, duration: 0.25, timer: 0, canActivate: true } },
-            { width: 30, height: 90, maxHealth: 5, reflectProb: 0.8, barrier: { active: false, duration: 0.25, timer: 0, canActivate: true } },
-            { width: 40, height: 120, maxHealth: 7, reflectProb: 0.9, barrier: { active: false, duration: 0.25, timer: 0, canActivate: true } }
-        ];
 
         let currentStage = 0;
 
