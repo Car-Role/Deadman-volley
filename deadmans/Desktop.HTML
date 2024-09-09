@@ -204,7 +204,8 @@
             initialSpeed: 300,
             paused: false,
             pauseDuration: 1,
-            pauseTimer: 0
+            pauseTimer: 0,
+            target: null // New property to track the current target
         };
 
         const player = {
@@ -381,6 +382,13 @@
             ctx.strokeStyle = 'black';
             ctx.strokeRect(10, 10, 100, 20);
 
+            // Show damage taken
+            if (player.health < player.maxHealth) {
+                ctx.fillStyle = 'yellow';
+                ctx.font = '14px Arial';
+                ctx.fillText(`-${player.maxHealth - player.health}`, 115, 25);
+            }
+
             // Enemy health bar
             ctx.fillStyle = 'lightgray';
             ctx.fillRect(canvas.width - 110, 10, 100, 20);
@@ -388,6 +396,13 @@
             ctx.fillRect(canvas.width - 110, 10, (currentEnemy.health / currentEnemy.maxHealth) * 100, 20);
             ctx.strokeStyle = 'black';
             ctx.strokeRect(canvas.width - 110, 10, 100, 20);
+
+            // Show damage taken
+            if (currentEnemy.health < currentEnemy.maxHealth) {
+                ctx.fillStyle = 'yellow';
+                ctx.font = '14px Arial';
+                ctx.fillText(`-${currentEnemy.maxHealth - currentEnemy.health}`, canvas.width - 130, 25);
+            }
         }
 
         // Modify the update function to accept deltaTime
@@ -403,6 +418,16 @@
 
             // Ball movement
             if (!ball.paused) {
+                // Home in on the target
+                if (ball.target) {
+                    const targetY = ball.target.y + ball.target.height / 2;
+                    const dy = targetY - ball.y;
+                    const dx = ball.target.x + ball.target.width / 2 - ball.x;
+                    const angle = Math.atan2(dy, dx);
+                    ball.dx = Math.cos(angle);
+                    ball.dy = Math.sin(angle);
+                }
+
                 ball.x += ball.dx * ball.speed * deltaTime;
                 ball.y += ball.dy * ball.speed * deltaTime;
 
@@ -417,6 +442,7 @@
                     if (collidedPlayer.barrier.active) {
                         ball.dx = -ball.dx;
                         ball.speed *= 1.1; // Increase speed on successful shield
+                        ball.target = collidedPlayer === player ? currentEnemy : player; // Switch target
                     } else {
                         collidedPlayer.health--;
                         resetBall();
@@ -426,6 +452,8 @@
                 ball.pauseTimer -= deltaTime;
                 if (ball.pauseTimer <= 0) {
                     ball.paused = false;
+                    // Randomly choose initial target
+                    ball.target = Math.random() < 0.5 ? player : currentEnemy;
                 }
             }
 
@@ -494,11 +522,11 @@
         function resetBall() {
             ball.x = canvas.width / 2;
             ball.y = canvas.height / 2;
-            ball.dx = Math.random() > 0.5 ? 1 : -1;
-            ball.dy = Math.random() * 2 - 1;
             ball.speed = ball.initialSpeed;
             ball.paused = true;
             ball.pauseTimer = ball.pauseDuration;
+            // Randomly choose new target
+            ball.target = Math.random() < 0.5 ? player : currentEnemy;
         }
 
         function draw() {
@@ -717,15 +745,10 @@
             if (!isHost) {
                 ball = state.ball;
                 currentEnemy = state.player;
-                player.health = state.currentEnemy.health;
-                player.maxHealth = state.currentEnemy.maxHealth;
+                player = state.currentEnemy;
                 currentStage = state.currentStage;
                 gameOver = state.gameOver;
                 stageClear = state.stageClear;
-
-                // Flip the x-coordinates for the non-host player
-                player.x = canvas.width - player.x - player.width;
-                currentEnemy.x = canvas.width - currentEnemy.x - currentEnemy.width;
             }
         }
 
