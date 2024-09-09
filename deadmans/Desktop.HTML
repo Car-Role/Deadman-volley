@@ -304,7 +304,10 @@
             isMultiplayer = true;
             gameMenu.style.display = 'none';
             connectionControls.style.display = 'block';
-            initializePeer();
+            hostButton.style.display = 'inline-block';
+            connectButton.style.display = 'inline-block';
+            peerIdInput.style.display = 'inline-block';
+            copyPeerIdButton.style.display = 'none';
         }
 
         let shieldKeyDown = false; // Add this variable to track if the spacebar is held down
@@ -740,15 +743,33 @@
 
         function connectToPeer() {
             const peerId = peerIdInput.value;
-            conn = peer.connect(peerId);
-            setupConnection();
+            if (peerId) {
+                conn = peer.connect(peerId);
+                setupConnection();
+            } else {
+                alert('Please enter a Peer ID to connect.');
+            }
         }
 
         function hostGame() {
             isHost = true;
             initializePeer();
-            canvas.style.display = 'block';
-            connectionControls.style.display = 'none';
+            hostButton.style.display = 'none';
+            connectButton.style.display = 'none';
+            peerIdInput.style.display = 'none';
+            copyPeerIdButton.style.display = 'inline-block';
+        }
+
+        function copyPeerId() {
+            navigator.clipboard.writeText(myPeerId).then(() => {
+                copyPeerIdButton.textContent = 'Peer ID Copied!';
+                setTimeout(() => {
+                    copyPeerIdButton.textContent = 'Copy Peer ID: ' + myPeerId;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                copyPeerIdButton.textContent = 'Failed to copy Peer ID';
+            });
         }
 
         function setupConnection() {
@@ -760,9 +781,7 @@
                 connectionEstablished = true;
                 canvas.style.display = 'block';
                 connectionControls.style.display = 'none';
-                if (!isHost) {
-                    resetGame();
-                }
+                resetGame();
                 gamePaused = false;
                 startGameLoop();
             });
@@ -785,14 +804,9 @@
             if (!isHost) {
                 ball = state.ball;
                 currentEnemy = state.player;
-                player = {
-                    ...player,
-                    x: canvas.width - state.currentEnemy.x - player.width,
-                    y: state.currentEnemy.y,
-                    health: state.currentEnemy.health,
-                    maxHealth: state.currentEnemy.maxHealth,
-                    barrier: state.currentEnemy.barrier
-                };
+                player.health = state.currentEnemy.health;
+                player.maxHealth = state.currentEnemy.maxHealth;
+                player.barrier = state.currentEnemy.barrier;
                 currentStage = state.currentStage;
                 gameOver = state.gameOver;
                 stageClear = state.stageClear;
