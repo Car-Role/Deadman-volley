@@ -584,22 +584,14 @@
 
         function resetGame() {
             // Reset game objects
-            ball.x = 500;
-            ball.y = 300;
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
             ball.speed = ball.initialSpeed;
             ball.paused = true;
             ball.pauseTimer = ball.pauseDuration;
 
-            player.x = 50;
-            player.y = 270;
-            player.health = player.maxHealth;
-            player.barrier.active = false;
-            player.barrier.timer = 0;
-
             currentStage = 0;
             currentEnemy = {
-                x: 930,
-                y: 270,
                 ...enemies[currentStage],
                 health: enemies[currentStage].maxHealth,
                 barrier: { ...enemies[currentStage].barrier }
@@ -618,22 +610,28 @@
             if (isMultiplayer) {
                 if (isHost) {
                     player.x = 50;
-                    currentEnemy.x = canvas.width - 70;
+                    currentEnemy.x = canvas.width - 70 - currentEnemy.width;
                 } else {
-                    player.x = canvas.width - 70;
+                    player.x = canvas.width - 70 - player.width;
                     currentEnemy.x = 50;
                 }
-                gamePaused = false;
             } else {
                 player.x = 50;
-                currentEnemy.x = canvas.width - 70;
-                gamePaused = false;
+                currentEnemy.x = canvas.width - 70 - currentEnemy.width;
             }
 
             player.y = canvas.height / 2 - player.height / 2;
             currentEnemy.y = canvas.height / 2 - currentEnemy.height / 2;
+            player.health = player.maxHealth;
+            player.barrier.active = false;
+            player.barrier.timer = 0;
 
             resetBall();
+            gamePaused = false;
+
+            if (isMultiplayer && conn && conn.open) {
+                sendGameState();
+            }
         }
 
         function applyPowerUp(powerUpType) {
@@ -658,8 +656,6 @@
 
             // Set up the next enemy
             currentEnemy = {
-                x: 930,
-                y: 270,
                 ...enemies[currentStage],
                 health: enemies[currentStage].maxHealth,
                 barrier: { ...enemies[currentStage].barrier }
@@ -722,7 +718,6 @@
             conn.on('open', () => {
                 console.log('Connected to peer');
                 connectionEstablished = true;
-                alert('Connection established! The game will start automatically.');
                 canvas.style.display = 'block';
                 connectionControls.style.display = 'none';
                 if (!isHost) {
@@ -738,6 +733,8 @@
                 updateGameState(data.state);
             } else if (data.type === 'playerInput') {
                 updateOpponentInput(data.input);
+            } else if (data.type === 'replay') {
+                resetGame();
             }
         }
 
@@ -753,7 +750,11 @@
         }
 
         function updateOpponentInput(input) {
-            currentEnemy.x = canvas.width - input.x - currentEnemy.width;
+            if (isHost) {
+                currentEnemy.x = canvas.width - input.x - currentEnemy.width;
+            } else {
+                currentEnemy.x = input.x;
+            }
             currentEnemy.y = input.y;
             currentEnemy.barrier.active = input.barrier;
         }
