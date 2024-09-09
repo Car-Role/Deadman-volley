@@ -208,7 +208,7 @@
             target: null // New property to track the current target
         };
 
-        const player = {
+        let player = {
             x: 50,
             y: 270,
             width: 20,
@@ -226,12 +226,6 @@
             }
         };
 
-        const enemies = [
-            { width: 20, height: 60, maxHealth: 3, reflectProb: 0.7, barrier: { active: false, duration: 0.25, timer: 0, canActivate: true } },
-            { width: 30, height: 90, maxHealth: 5, reflectProb: 0.8, barrier: { active: false, duration: 0.25, timer: 0, canActivate: true } },
-            { width: 40, height: 120, maxHealth: 7, reflectProb: 0.9, barrier: { active: false, duration: 0.25, timer: 0, canActivate: true } }
-        ];
-
         let currentEnemy = {
             x: 930,
             y: 270,
@@ -239,6 +233,12 @@
             health: enemies[0].maxHealth,
             barrier: { ...enemies[0].barrier }
         };
+
+        const enemies = [
+            { width: 20, height: 60, maxHealth: 3, reflectProb: 0.7, barrier: { active: false, duration: 0.25, timer: 0, canActivate: true } },
+            { width: 30, height: 90, maxHealth: 5, reflectProb: 0.8, barrier: { active: false, duration: 0.25, timer: 0, canActivate: true } },
+            { width: 40, height: 120, maxHealth: 7, reflectProb: 0.9, barrier: { active: false, duration: 0.25, timer: 0, canActivate: true } }
+        ];
 
         let currentStage = 0;
 
@@ -624,13 +624,11 @@
 
             if (isMultiplayer) {
                 if (isHost) {
-                    player = {
-                        ...player,
-                        x: 50,
-                        y: canvas.height / 2 - player.height / 2,
-                        health: player.maxHealth,
-                        barrier: { active: false, duration: 0.25, timer: 0, canActivate: true }
-                    };
+                    player.x = 50;
+                    player.y = canvas.height / 2 - player.height / 2;
+                    player.health = player.maxHealth;
+                    player.barrier = { active: false, duration: 0.25, timer: 0, canActivate: true };
+
                     currentEnemy = {
                         ...enemies[currentStage],
                         x: canvas.width - 70 - enemies[currentStage].width,
@@ -639,13 +637,11 @@
                         barrier: { ...enemies[currentStage].barrier }
                     };
                 } else {
-                    player = {
-                        ...player,
-                        x: canvas.width - 70 - player.width,
-                        y: canvas.height / 2 - player.height / 2,
-                        health: player.maxHealth,
-                        barrier: { active: false, duration: 0.25, timer: 0, canActivate: true }
-                    };
+                    player.x = canvas.width - 70 - player.width;
+                    player.y = canvas.height / 2 - player.height / 2;
+                    player.health = player.maxHealth;
+                    player.barrier = { active: false, duration: 0.25, timer: 0, canActivate: true };
+
                     currentEnemy = {
                         ...enemies[currentStage],
                         x: 50,
@@ -655,13 +651,11 @@
                     };
                 }
             } else {
-                player = {
-                    ...player,
-                    x: 50,
-                    y: canvas.height / 2 - player.height / 2,
-                    health: player.maxHealth,
-                    barrier: { active: false, duration: 0.25, timer: 0, canActivate: true }
-                };
+                player.x = 50;
+                player.y = canvas.height / 2 - player.height / 2;
+                player.health = player.maxHealth;
+                player.barrier = { active: false, duration: 0.25, timer: 0, canActivate: true };
+
                 currentEnemy = {
                     ...enemies[currentStage],
                     x: canvas.width - 70 - enemies[currentStage].width,
