@@ -262,7 +262,12 @@
         // Event listeners
         document.addEventListener('keydown', keyDownHandler);
         document.addEventListener('keyup', keyUpHandler);
-        replayButton.addEventListener('click', resetGame);
+        replayButton.addEventListener('click', () => {
+            if (isMultiplayer && conn && conn.open) {
+                conn.send({ type: 'requestReplay' });
+            }
+            requestReplay();
+        });
         healthRefreshPanel.addEventListener('click', () => applyPowerUp('healthRefresh'));
         healthIncreasePanel.addEventListener('click', () => applyPowerUp('healthIncrease'));
         damageIncreasePanel.addEventListener('click', () => applyPowerUp('damageIncrease'));
@@ -301,6 +306,8 @@
             initializePeer();
         }
 
+        let shieldKeyDown = false; // Add this variable to track if the spacebar is held down
+
         function keyDownHandler(e) {
             if (e.key === 'ArrowUp' || e.key === 'w') upPressed = true;
             else if (e.key === 'ArrowDown' || e.key === 's') downPressed = true;
@@ -308,10 +315,11 @@
             else if (e.key === 'ArrowRight' || e.key === 'd') rightPressed = true;
             else if (e.key === ' ') {
                 e.preventDefault(); // Prevent scrolling
-                if (!player.barrier.active && player.barrier.canActivate) {
+                if (!shieldKeyDown && !player.barrier.active && player.barrier.canActivate) {
                     player.barrier.active = true;
                     player.barrier.timer = player.barrier.duration;
                     player.barrier.canActivate = false;
+                    shieldKeyDown = true;
                 }
             }
         }
@@ -322,7 +330,7 @@
             else if (e.key === 'ArrowLeft' || e.key === 'a') leftPressed = false;
             else if (e.key === 'ArrowRight' || e.key === 'd') rightPressed = false;
             else if (e.key === ' ') {
-                shieldPressed = false;
+                shieldKeyDown = false;
                 player.barrier.canActivate = true;
             }
         }
@@ -407,7 +415,7 @@
 
         // Modify the update function to accept deltaTime
         function update(deltaTime) {
-            if (gameOver || stageClear) return;
+            if (gameOver || stageClear || gamePaused) return;
 
             // Player movement
             const playerSpeed = 300 * deltaTime;
@@ -582,6 +590,21 @@
             requestAnimationFrame(gameLoop);
         }
 
+        function requestReplay() {
+            resetGame();
+            gamePaused = true;
+            replayButton.style.display = 'none';
+            stageClearText.textContent = 'Waiting for other player...';
+            stageClearText.style.display = 'block';
+        }
+
+        function startReplay() {
+            gamePaused = false;
+            stageClearText.style.display = 'none';
+            resetBall();
+            startGameLoop();
+        }
+
         function resetGame() {
             // Reset game objects
             ball.x = canvas.width / 2;
@@ -605,7 +628,9 @@
 
             // Reset game state
             gameOver = false;
+            stageClear = false;
             replayButton.style.display = 'none';
+            powerUpContainer.style.display = 'none';
 
             if (isMultiplayer) {
                 if (isHost) {
@@ -625,6 +650,9 @@
             player.health = player.maxHealth;
             player.barrier.active = false;
             player.barrier.timer = 0;
+            currentEnemy.health = currentEnemy.maxHealth;
+            currentEnemy.barrier.active = false;
+            currentEnemy.barrier.timer = 0;
 
             resetBall();
             gamePaused = false;
@@ -733,8 +761,11 @@
                 updateGameState(data.state);
             } else if (data.type === 'playerInput') {
                 updateOpponentInput(data.input);
-            } else if (data.type === 'replay') {
-                resetGame();
+            } else if (data.type === 'requestReplay') {
+                requestReplay();
+                conn.send({ type: 'confirmReplay' });
+            } else if (data.type === 'confirmReplay') {
+                startReplay();
             }
         }
 
