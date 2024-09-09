@@ -602,6 +602,7 @@
             gamePaused = false;
             stageClearText.style.display = 'none';
             resetBall();
+            resetGame(); // Add this line to ensure both players are reset correctly
             startGameLoop();
         }
 
@@ -614,18 +615,7 @@
             ball.pauseTimer = ball.pauseDuration;
 
             currentStage = 0;
-            currentEnemy = {
-                ...enemies[currentStage],
-                health: enemies[currentStage].maxHealth,
-                barrier: { ...enemies[currentStage].barrier }
-            };
-
-            // Reset effects
-            reflectionEffect.active = false;
-            reflectionEffect.timer = 0;
-            damageEffect.active = false;
-            damageEffect.timer = 0;
-
+            
             // Reset game state
             gameOver = false;
             stageClear = false;
@@ -634,25 +624,52 @@
 
             if (isMultiplayer) {
                 if (isHost) {
-                    player.x = 50;
-                    currentEnemy.x = canvas.width - 70 - currentEnemy.width;
+                    player = {
+                        ...player,
+                        x: 50,
+                        y: canvas.height / 2 - player.height / 2,
+                        health: player.maxHealth,
+                        barrier: { active: false, duration: 0.25, timer: 0, canActivate: true }
+                    };
+                    currentEnemy = {
+                        ...enemies[currentStage],
+                        x: canvas.width - 70 - enemies[currentStage].width,
+                        y: canvas.height / 2 - enemies[currentStage].height / 2,
+                        health: enemies[currentStage].maxHealth,
+                        barrier: { ...enemies[currentStage].barrier }
+                    };
                 } else {
-                    player.x = canvas.width - 70 - player.width;
-                    currentEnemy.x = 50;
+                    player = {
+                        ...player,
+                        x: canvas.width - 70 - player.width,
+                        y: canvas.height / 2 - player.height / 2,
+                        health: player.maxHealth,
+                        barrier: { active: false, duration: 0.25, timer: 0, canActivate: true }
+                    };
+                    currentEnemy = {
+                        ...enemies[currentStage],
+                        x: 50,
+                        y: canvas.height / 2 - enemies[currentStage].height / 2,
+                        health: enemies[currentStage].maxHealth,
+                        barrier: { ...enemies[currentStage].barrier }
+                    };
                 }
             } else {
-                player.x = 50;
-                currentEnemy.x = canvas.width - 70 - currentEnemy.width;
+                player = {
+                    ...player,
+                    x: 50,
+                    y: canvas.height / 2 - player.height / 2,
+                    health: player.maxHealth,
+                    barrier: { active: false, duration: 0.25, timer: 0, canActivate: true }
+                };
+                currentEnemy = {
+                    ...enemies[currentStage],
+                    x: canvas.width - 70 - enemies[currentStage].width,
+                    y: canvas.height / 2 - enemies[currentStage].height / 2,
+                    health: enemies[currentStage].maxHealth,
+                    barrier: { ...enemies[currentStage].barrier }
+                };
             }
-
-            player.y = canvas.height / 2 - player.height / 2;
-            currentEnemy.y = canvas.height / 2 - currentEnemy.height / 2;
-            player.health = player.maxHealth;
-            player.barrier.active = false;
-            player.barrier.timer = 0;
-            currentEnemy.health = currentEnemy.maxHealth;
-            currentEnemy.barrier.active = false;
-            currentEnemy.barrier.timer = 0;
 
             resetBall();
             gamePaused = false;
@@ -773,7 +790,14 @@
             if (!isHost) {
                 ball = state.ball;
                 currentEnemy = state.player;
-                player = state.currentEnemy;
+                player = {
+                    ...player,
+                    x: canvas.width - state.currentEnemy.x - player.width,
+                    y: state.currentEnemy.y,
+                    health: state.currentEnemy.health,
+                    maxHealth: state.currentEnemy.maxHealth,
+                    barrier: state.currentEnemy.barrier
+                };
                 currentStage = state.currentStage;
                 gameOver = state.gameOver;
                 stageClear = state.stageClear;
