@@ -226,16 +226,17 @@
         };
 
         const enemies = [
-            { width: 20, height: 60, maxHealth: 3, reflectProb: 0.7 },
-            { width: 30, height: 90, maxHealth: 5, reflectProb: 0.8 },
-            { width: 40, height: 120, maxHealth: 7, reflectProb: 0.9 }
+            { width: 20, height: 60, maxHealth: 3, reflectProb: 0.7, barrier: { active: false, duration: 0.25, timer: 0, canActivate: true } },
+            { width: 30, height: 90, maxHealth: 5, reflectProb: 0.8, barrier: { active: false, duration: 0.25, timer: 0, canActivate: true } },
+            { width: 40, height: 120, maxHealth: 7, reflectProb: 0.9, barrier: { active: false, duration: 0.25, timer: 0, canActivate: true } }
         ];
 
         let currentEnemy = {
             x: 930,
             y: 270,
             ...enemies[0],
-            health: enemies[0].maxHealth
+            health: enemies[0].maxHealth,
+            barrier: { ...enemies[0].barrier }
         };
 
         let currentStage = 0;
@@ -348,7 +349,7 @@
             ctx.fillStyle = isHost ? 'green' : 'blue';
             ctx.fillRect(currentEnemy.x, currentEnemy.y, currentEnemy.width, currentEnemy.height);
 
-            if (currentEnemy.barrier.active) {
+            if (currentEnemy.barrier && currentEnemy.barrier.active) {
                 ctx.strokeStyle = 'cyan';
                 ctx.lineWidth = 6;
                 ctx.strokeRect(currentEnemy.x - 8, currentEnemy.y - 8, currentEnemy.width + 16, currentEnemy.height + 16);
@@ -572,7 +573,8 @@
                 x: 930,
                 y: 270,
                 ...enemies[currentStage],
-                health: enemies[currentStage].maxHealth
+                health: enemies[currentStage].maxHealth,
+                barrier: { ...enemies[currentStage].barrier }
             };
 
             // Reset effects
@@ -631,7 +633,8 @@
                 x: 930,
                 y: 270,
                 ...enemies[currentStage],
-                health: enemies[currentStage].maxHealth
+                health: enemies[currentStage].maxHealth,
+                barrier: { ...enemies[currentStage].barrier }
             };
 
             // Reset the ball
@@ -778,6 +781,8 @@
 
         function startGameLoop() {
             canvas.style.display = 'block';
+            lastTime = 0;
+            accumulator = 0;
             requestAnimationFrame(gameLoop);
         }
     </script>
